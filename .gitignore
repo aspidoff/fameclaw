@@ -1,0 +1,16 @@
+# Working files (generated during runs)
+*.csv
+*.log
+fameclaw_state.json
+*_scan.json
+*_audience.json
+.fameclaw_*
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc

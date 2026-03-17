@@ -1,3 +1,151 @@
-# FameClaw
+# 🐾 FameClaw
 
-YouTube creator outreach prospector. Scan a brand's website, auto-detect niche, find matching YouTube channels, extract emails + stats, score creators by audience fit. Batch scrape with cron support. No API keys — just curl + python3.
+YouTube creator outreach prospector. Find creators by niche, extract emails + stats, score them by audience fit, and batch-scrape to CSV.
+
+No API keys. No dependencies. Just `curl` + `python3`.
+
+## What It Does
+
+1. **Scan** your brand's website → auto-detect product category & niche
+2. **Search** YouTube for creators in matching niches
+3. **Extract** channel stats: subscribers, views, emails, descriptions
+4. **Discover** related channels via YouTube's recommendation algorithm
+5. **Score** every channel against your brand's audience profile (0-100)
+6. **Export** ranked CSV with match type: demographic, authority, or both
+
+## Quick Start
+
+### Single channel
+```bash
+bash scripts/extract_channel_data.sh "https://youtube.com/@handle" output.csv
+```
+
+### Batch prospecting
+```bash
+bash scripts/prospect.sh \
+  --queries "tiktok shop tutorial" "dropshipping beginner" \
+  --target 100 \
+  --output channels.csv \
+  --max-subs 100000
+```
+
+### Full pipeline with audience matching
+```bash
+# 1. Scan brand site
+bash scripts/onboard.sh --brand "MyBrand" --url "https://mybrand.com" --output scan.json
+
+# 2. Create audience profile (edit the generated template)
+# Sets target categories, demographics, authority preferences
+
+# 3. Prospect
+bash scripts/prospect.sh --config config.json
+
+# 4. Score & rank
+python3 scripts/score_channels.py --csv channels.csv --profile audience.json --output scored.csv
+```
+
+## Audience Matching
+
+FameClaw scores creators using three dimensions:
+
+| Dimension | Points | What It Checks |
+|-----------|--------|----------------|
+| **Category match** | 0-50 | Does the channel's content match your niche? |
+| **Demographic match** | 0-30 | Does the creator match your target customer? |
+| **Authority match** | 0-20 | Does the creator have professional credibility? |
+
+**14 content categories:** Beauty & Skincare, Fitness & Health, Tech & Gadgets, Fashion & Lifestyle, Food & Cooking, E-commerce & Business, TikTok & Social Media, Finance & Investing, Gaming, Education & Tutorial, Home & DIY, Parenting & Family, Pets & Animals, Travel & Outdoor
+
+**Match types:**
+- `demographic` — creator looks like your buyer (age, gender, lifestyle match)
+- `authority` — creator has credibility (doctor, coach, certified expert, founder)
+- `demographic+authority` — both signals present
+
+## Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `onboard.sh` | Scan a brand's website, extract niche signals |
+| `scan_site.py` | Site intelligence extraction (title, description, industry, social links) |
+| `prospect.sh` | Batch prospecting pipeline with cron support |
+| `extract_channel_data.sh` | Single channel → stats + email → CSV row |
+| `extract_email.sh` | Email-only extraction from a channel |
+| `find_related_channels.sh` | Discover related channels via YouTube recommendations |
+| `score_channels.py` | Score & rank channels against audience profile |
+
+## Config
+
+```json
+{
+  "queries": ["tiktok shop affiliate tutorial", "faceless youtube channel"],
+  "target_emails": 100,
+  "output": "channels.csv",
+  "max_subs": 100000,
+  "batch_size": 200,
+  "work_dir": "./prospect-run",
+  "cron_name": "my-prospect-job"
+}
+```
+
+## Audience Profile
+
+```json
+{
+  "brand": "MyBrand",
+  "url": "https://mybrand.com",
+  "target_categories": ["Beauty & Skincare", "Fashion & Lifestyle"],
+  "target_demographics": {
+    "age_range": "25-40",
+    "gender": "female",
+    "interests": ["skincare", "clean beauty"],
+    "location": "US"
+  },
+  "authority_preferred": true
+}
+```
+
+## CSV Output
+
+```
+channel_name, handle, subscribers, total_videos, avg_views, median_views,
+min_views, max_views, videos_sampled, email, description, external_links,
+channel_url, content_category, match_score, match_type, match_reasons
+```
+
+## Cron Automation
+
+For large targets, run on a schedule:
+
+```bash
+# Using OpenClaw
+openclaw cron add --name "my-prospect" --every 30m \
+  --session isolated --model haiku --timeout-seconds 1800 \
+  --message "Run: bash scripts/prospect.sh --config config.json"
+
+# Using system cron
+*/30 * * * * bash /path/to/scripts/prospect.sh --config /path/to/config.json
+```
+
+The script auto-removes the cron job when the email target is reached.
+
+## How Email Discovery Works
+
+1. Scan YouTube channel page for emails in metadata/description
+2. Derive vanity domain from handle (strips "live", "official", "hq")
+3. Check vanity domain: root, `/contact`, `/about`, `/contact-us`
+4. Filter junk (image files, google/youtube domains, noreply)
+
+## Requirements
+
+- `curl`
+- `python3` (3.9+)
+- No API keys needed
+- [OpenClaw](https://github.com/openclaw/openclaw) (optional, for cron automation)
+
+## OpenClaw Skill
+
+FameClaw is also available as an [OpenClaw](https://github.com/openclaw/openclaw) skill. Drop the `.skill` file into your workspace and the agent handles the entire pipeline conversationally — onboarding, prospecting, scoring, delivery.
+
+## License
+
+MIT
