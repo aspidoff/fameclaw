@@ -61,6 +61,52 @@ FameClaw scores creators using three dimensions:
 - `authority` — creator has credibility (doctor, coach, certified expert, founder)
 - `demographic+authority` — both signals present
 
+## Gmail Outreach
+
+Send personalized emails to scraped creators using Google's official [Workspace CLI](https://github.com/googleworkspace/cli).
+
+### Setup (one time)
+```bash
+# Install gws CLI
+# Download from https://github.com/googleworkspace/cli/releases
+
+# Authenticate (opens browser → click Allow)
+gws auth login -s gmail
+```
+
+### Send emails
+```bash
+# Dry run first
+bash scripts/outreach.sh \
+  --csv scored.csv \
+  --template template.html \
+  --brand "MyBrand" \
+  --website "https://mybrand.com" \
+  --rate 30 \
+  --min-score 25 \
+  --dry-run
+
+# Send for real
+bash scripts/outreach.sh \
+  --csv scored.csv \
+  --template template.html \
+  --brand "MyBrand" \
+  --rate 30
+```
+
+Features:
+- Personalized templates with `{{channel_name}}`, `{{handle}}`, `{{subscribers}}`, etc.
+- Rate limiting (default 30/hour, safe for Gmail)
+- Deduplication — never double-sends
+- Score filtering — only email high-match channels
+- Dry run mode — preview before sending
+
+### Check replies
+```bash
+gws gmail +triage --query "is:unread"
+gws gmail +reply --message-id <id> --body "Thanks!"
+```
+
 ## Scripts
 
 | Script | Purpose |
@@ -72,6 +118,7 @@ FameClaw scores creators using three dimensions:
 | `extract_email.sh` | Email-only extraction from a channel |
 | `find_related_channels.sh` | Discover related channels via YouTube recommendations |
 | `score_channels.py` | Score & rank channels against audience profile |
+| `outreach.sh` | Send personalized emails via gws CLI |
 
 ## Config
 

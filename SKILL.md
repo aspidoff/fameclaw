@@ -125,6 +125,92 @@ Output is sorted by match score descending. Present top results to the user grou
 - **Authority matches** — creators with professional credibility in the niche
 - **No match** — off-niche channels (may still be useful for broad awareness)
 
+## Gmail Outreach
+
+### Prerequisites
+FameClaw uses Google's official [Workspace CLI](https://github.com/googleworkspace/cli) (`gws`) for sending emails. One-time setup:
+
+1. **Install gws** — download from https://github.com/googleworkspace/cli/releases
+2. **Authenticate** — run `gws auth login -s gmail` (opens browser, click Allow)
+3. **Verify** — run `gws auth status` to confirm
+
+That's it. No Google Cloud Console, no API keys, no app passwords.
+
+### Step 9: Create outreach template
+Create an email template (plain text or HTML) with personalization variables:
+
+```
+Hi {{channel_name}},
+
+I came across your channel (@{{handle}}) and loved your content.
+
+We're building {{brand}} ({{website}}) and think there's a great fit
+for a collaboration. Would you be open to a quick chat?
+
+Best,
+[Your name]
+```
+
+Available template variables:
+- `{{channel_name}}` — creator's channel name
+- `{{handle}}` — @handle
+- `{{subscribers}}` — subscriber count
+- `{{avg_views}}` — average views
+- `{{email}}` — creator's email
+- `{{brand}}` — your brand name
+- `{{website}}` — your website URL
+
+### Step 10: Send outreach
+```bash
+# Dry run first — preview without sending
+bash scripts/outreach.sh \
+  --csv scored.csv \
+  --template template.html \
+  --brand "MyBrand" \
+  --website "https://mybrand.com" \
+  --rate 30 \
+  --min-score 25 \
+  --dry-run
+
+# Send for real
+bash scripts/outreach.sh \
+  --csv scored.csv \
+  --template template.html \
+  --brand "MyBrand" \
+  --website "https://mybrand.com" \
+  --rate 30 \
+  --min-score 25
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--csv` | required | Scored CSV from score_channels.py |
+| `--template` | required | Email template file (.txt or .html) |
+| `--subject` | "Partnership opportunity with {{brand}}" | Email subject (supports variables) |
+| `--brand` | "" | Brand name for template |
+| `--website` | "" | Website URL for template |
+| `--rate` | 30 | Emails per hour |
+| `--min-score` | 0 | Only email channels with this match score or higher |
+| `--from` | "" | Send-as alias (if configured in Gmail) |
+| `--dry-run` | false | Preview without sending |
+
+### Outreach features
+- **Deduplication** — tracks sent emails in `outreach_logs/sent.txt`, never double-sends
+- **Rate limiting** — configurable emails/hour (default 30, safe for Gmail)
+- **Email cleaning** — auto-filters junk emails (image files, noreply, test addresses)
+- **Score filtering** — only email high-match channels with `--min-score`
+- **Logging** — full run logs + sent/failed tracking
+- **Dry run** — always preview before sending
+
+### Check replies
+```bash
+# See unread replies
+gws gmail +triage --query "is:unread"
+
+# Reply to a specific message
+gws gmail +reply --message-id <id> --body "Thanks for getting back to me!"
+```
+
 ## Quick Start (advanced users)
 
 ### Single channel extraction
