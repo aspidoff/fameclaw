@@ -136,79 +136,85 @@ FameClaw uses Google's official [Workspace CLI](https://github.com/googleworkspa
 
 That's it. No Google Cloud Console, no API keys, no app passwords.
 
-### Step 9: Create outreach template
-Create an email template (plain text or HTML) with personalization variables:
+### Step 9: Configure outreach campaign
+Create an `outreach.json` config:
 
+```json
+{
+  "brand": "MyBrand",
+  "website": "https://mybrand.com",
+  "sender_name": "Alex",
+  "current_partnerships": ["@CreatorA", "@CreatorB", "@CreatorC"],
+  "rate": 30,
+  "min_score": 25,
+  "max_per_run": 50
+}
 ```
-Hi {{channel_name}},
 
-I came across your channel (@{{handle}}) and loved your content.
+| Field | Description |
+|-------|-------------|
+| `brand` | Your brand name |
+| `website` | Your website URL |
+| `sender_name` | Sign-off name in emails |
+| `current_partnerships` | 2-3 creators you're currently working with (social proof) |
+| `rate` | Emails per hour (default 30, safe for Gmail) |
+| `min_score` | Only email channels with this match score or higher |
+| `max_per_run` | Max emails per run |
 
-We're building {{brand}} ({{website}}) and think there's a great fit
-for a collaboration. Would you be open to a quick chat?
+### Step 10: Run outreach pipeline
 
-Best,
-[Your name]
-```
+The pipeline has 4 commands:
 
-Available template variables:
-- `{{channel_name}}` — creator's channel name
-- `{{handle}}` — @handle
-- `{{subscribers}}` — subscriber count
-- `{{avg_views}}` — average views
-- `{{email}}` — creator's email
-- `{{brand}}` — your brand name
-- `{{website}}` — your website URL
-
-### Step 10: Send outreach
 ```bash
-# Dry run first — preview without sending
-bash scripts/outreach.sh \
-  --csv scored.csv \
-  --template template.html \
-  --brand "MyBrand" \
-  --website "https://mybrand.com" \
-  --rate 30 \
-  --min-score 25 \
-  --dry-run
+# 1. Send first emails (fetches recent videos per creator for personalization)
+python3 scripts/outreach.py send --csv scored.csv --config outreach.json --dry-run
+python3 scripts/outreach.py send --csv scored.csv --config outreach.json
 
-# Send for real
-bash scripts/outreach.sh \
-  --csv scored.csv \
-  --template template.html \
-  --brand "MyBrand" \
-  --website "https://mybrand.com" \
-  --rate 30 \
-  --min-score 25
+# 2. Check for replies (moves responders to NEGOTIATE stage)
+python3 scripts/outreach.py check-replies --config outreach.json
+
+# 3. Send follow-ups to non-responders (auto-timed: 3 days, then 5 days)
+python3 scripts/outreach.py followup --config outreach.json --dry-run
+python3 scripts/outreach.py followup --config outreach.json
+
+# 4. Check campaign status
+python3 scripts/outreach.py status --config outreach.json
 ```
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--csv` | required | Scored CSV from score_channels.py |
-| `--template` | required | Email template file (.txt or .html) |
-| `--subject` | "Partnership opportunity with {{brand}}" | Email subject (supports variables) |
-| `--brand` | "" | Brand name for template |
-| `--website` | "" | Website URL for template |
-| `--rate` | 30 | Emails per hour |
-| `--min-score` | 0 | Only email channels with this match score or higher |
-| `--from` | "" | Send-as alias (if configured in Gmail) |
-| `--dry-run` | false | Preview without sending |
+### Email sequence
+Three-stage sequence, all auto-generated and personalized per creator:
+
+**Email 1 (Initial)** — short, mentions a specific recent video, names 2-3 current partnerships as social proof, asks for a quick chat.
+
+**Email 2 (Follow-up, day 3)** — bump, references a different video, keeps it casual.
+
+**Email 3 (Final follow-up, day 8)** — last touch, respects their time, clear CTA.
+
+Each email:
+- Mentions a **specific video** from the creator's channel (fetched live)
+- References **current partnerships** (social proof from config)
+- Is **short** — 3-5 sentences max
+- Stops automatically if the creator **replies**
 
 ### Outreach features
-- **Deduplication** — tracks sent emails in `outreach_logs/sent.txt`, never double-sends
-- **Rate limiting** — configurable emails/hour (default 30, safe for Gmail)
-- **Email cleaning** — auto-filters junk emails (image files, noreply, test addresses)
-- **Score filtering** — only email high-match channels with `--min-score`
-- **Logging** — full run logs + sent/failed tracking
+- **Per-creator personalization** — fetches recent videos, mentions them by title
+- **Social proof** — references current partnerships in the first email
+- **Auto follow-ups** — 3 days after first, 5 days after follow-up 1
+- **Reply detection** — checks inbox via `gws`, moves responders to NEGOTIATE
+- **Deduplication** — campaign state tracks every contact, never double-sends
+- **Rate limiting** — configurable emails/hour
+- **Score filtering** — only email high-match channels
 - **Dry run** — always preview before sending
+- **Campaign state** — saved to `outreach_state.json`, survives restarts
 
-### Check replies
+### Automate with cron
+Set up follow-ups and reply checking on a schedule:
+
 ```bash
-# See unread replies
-gws gmail +triage --query "is:unread"
-
-# Reply to a specific message
-gws gmail +reply --message-id <id> --body "Thanks for getting back to me!"
+# Check replies + send follow-ups every 6 hours
+openclaw cron add --name "outreach-followup" --every 6h \
+  --session isolated --model haiku --timeout-seconds 300 \
+  --message "Run: python3 scripts/outreach.py check-replies --config outreach.json && python3 scripts/outreach.py followup --config outreach.json"
 ```
 
 ## Quick Start (advanced users)

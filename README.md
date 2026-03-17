@@ -74,38 +74,42 @@ Send personalized emails to scraped creators using Google's official [Workspace 
 gws auth login -s gmail
 ```
 
-### Send emails
-```bash
-# Dry run first
-bash scripts/outreach.sh \
-  --csv scored.csv \
-  --template template.html \
-  --brand "MyBrand" \
-  --website "https://mybrand.com" \
-  --rate 30 \
-  --min-score 25 \
-  --dry-run
-
-# Send for real
-bash scripts/outreach.sh \
-  --csv scored.csv \
-  --template template.html \
-  --brand "MyBrand" \
-  --rate 30
+### Configure campaign
+```json
+{
+  "brand": "MyBrand",
+  "website": "https://mybrand.com",
+  "sender_name": "Alex",
+  "current_partnerships": ["@CreatorA", "@CreatorB", "@CreatorC"],
+  "rate": 30,
+  "min_score": 25,
+  "max_per_run": 50
+}
 ```
 
-Features:
-- Personalized templates with `{{channel_name}}`, `{{handle}}`, `{{subscribers}}`, etc.
-- Rate limiting (default 30/hour, safe for Gmail)
-- Deduplication — never double-sends
-- Score filtering — only email high-match channels
-- Dry run mode — preview before sending
-
-### Check replies
+### Run outreach
 ```bash
-gws gmail +triage --query "is:unread"
-gws gmail +reply --message-id <id> --body "Thanks!"
+# Send first emails (auto-fetches recent videos per creator)
+python3 scripts/outreach.py send --csv scored.csv --config outreach.json --dry-run
+python3 scripts/outreach.py send --csv scored.csv --config outreach.json
+
+# Check for replies → moves responders to NEGOTIATE
+python3 scripts/outreach.py check-replies --config outreach.json
+
+# Auto follow-ups (day 3 + day 8)
+python3 scripts/outreach.py followup --config outreach.json
+
+# Campaign dashboard
+python3 scripts/outreach.py status --config outreach.json
 ```
+
+### Email sequence
+Three auto-generated emails per creator:
+1. **Initial** — short, mentions their specific video by name, drops 2-3 current partnerships
+2. **Follow-up (day 3)** — bump, references a different video
+3. **Final (day 8)** — last touch, respects their time
+
+All emails stop automatically when the creator replies.
 
 ## Scripts
 
@@ -118,7 +122,9 @@ gws gmail +reply --message-id <id> --body "Thanks!"
 | `extract_email.sh` | Email-only extraction from a channel |
 | `find_related_channels.sh` | Discover related channels via YouTube recommendations |
 | `score_channels.py` | Score & rank channels against audience profile |
-| `outreach.sh` | Send personalized emails via gws CLI |
+| `outreach.py` | Multi-stage outreach pipeline (send, follow-up, reply detection) |
+| `outreach.sh` | Simple one-shot email sender via gws CLI |
+| `get_videos.sh` | Fetch recent video titles for personalization |
 
 ## Config
 
