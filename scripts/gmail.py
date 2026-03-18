@@ -28,6 +28,7 @@ SMTP_HOST = "smtp.gmail.com"
 SMTP_PORT = 587
 IMAP_HOST = "imap.gmail.com"
 IMAP_PORT = 993
+DEFAULT_CREDS = Path.home() / ".config" / "fameclaw" / "gmail.json"
 
 
 class GmailClient:
@@ -204,23 +205,25 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="FameClaw Gmail Client")
     sub = parser.add_subparsers(dest="command")
 
+    default_creds = str(DEFAULT_CREDS)
+
     p_test = sub.add_parser("test", help="Test Gmail connection")
-    p_test.add_argument("--creds", default="gmail_creds.json")
+    p_test.add_argument("--creds", default=default_creds)
 
     p_send = sub.add_parser("send", help="Send an email")
-    p_send.add_argument("--creds", default="gmail_creds.json")
+    p_send.add_argument("--creds", default=default_creds)
     p_send.add_argument("--to", required=True)
     p_send.add_argument("--subject", required=True)
     p_send.add_argument("--body", required=True)
     p_send.add_argument("--html", action="store_true")
 
     p_replies = sub.add_parser("replies", help="Check for replies from addresses")
-    p_replies.add_argument("--creds", default="gmail_creds.json")
+    p_replies.add_argument("--creds", default=default_creds)
     p_replies.add_argument("--from-emails", nargs="+", required=True)
     p_replies.add_argument("--since", help="Check since date (YYYY-MM-DD)")
 
     p_inbox = sub.add_parser("inbox", help="Show recent inbox")
-    p_inbox.add_argument("--creds", default="gmail_creds.json")
+    p_inbox.add_argument("--creds", default=default_creds)
     p_inbox.add_argument("--query", default="UNSEEN")
     p_inbox.add_argument("--max", type=int, default=20)
 

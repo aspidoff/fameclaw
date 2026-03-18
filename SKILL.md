@@ -11,12 +11,13 @@ Find YouTube creators by niche, extract their emails + stats, discover related c
 
 For new users, always run the onboarding flow before prospecting. This is a multi-turn conversational flow — ask, scan, clarify, propose, confirm.
 
-### Step 1: Ask for brand info
-Ask the user two things:
+### Step 1: Ask for brand info + connect Gmail
+Ask the user for:
 1. **Brand name**
 2. **Website URL**
+3. **Connect Gmail** — check with `bash scripts/gmail_auth.sh status`. If not configured, run `bash scripts/gmail_auth.sh setup` (interactive — prompts for email, app password, display name).
 
-Keep it casual, one message: "What's your brand name and website?"
+Keep it casual: "What's your brand name and website? And have you connected your Gmail yet?"
 
 ### Step 2: Scan the site
 ```bash
@@ -128,21 +129,22 @@ Output is sorted by match score descending. Present top results to the user grou
 ## Gmail Outreach
 
 ### Prerequisites
-FameClaw uses Gmail App Passwords for sending (SMTP) and tracking replies (IMAP). One-time setup:
+FameClaw uses Gmail App Passwords for sending (SMTP) and tracking replies (IMAP).
 
-1. Go to **Google Account → Security → 2-Step Verification** → turn ON
-2. Go to **Google Account → Security → App passwords** → generate one
-3. Create `gmail_creds.json`:
-```json
-{
-  "email": "you@gmail.com",
-  "app_password": "xxxx xxxx xxxx xxxx",
-  "display_name": "Your Name"
-}
+**During onboarding, after collecting brand info (Step 1), run Gmail setup:**
+
+```bash
+bash scripts/gmail_auth.sh setup
 ```
-4. Test: `python3 scripts/gmail.py test --creds gmail_creds.json`
 
-That's it. No Google Cloud Console, no OAuth, no API keys. Same password handles sending + reply tracking.
+This prompts for:
+1. Gmail address
+2. App password (guide shown in the prompt)
+3. Display name (e.g. "Alex from MyBrand")
+
+Credentials stored at `~/.config/fameclaw/gmail.json` (mode 600, same pattern as OpenClaw config).
+
+To verify: `bash scripts/gmail_auth.sh test`
 
 ### Step 9: Configure outreach campaign
 Create an `outreach.json` config:

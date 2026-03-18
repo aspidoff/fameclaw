@@ -57,7 +57,8 @@ _gmail_client = None
 def get_gmail(config):
     global _gmail_client
     if _gmail_client is None:
-        creds = config.get("gmail_creds", "gmail_creds.json")
+        default_creds = str(Path.home() / ".config" / "fameclaw" / "gmail.json")
+        creds = config.get("gmail_creds", default_creds)
         _gmail_client = GmailClient(creds)
     return _gmail_client
 
