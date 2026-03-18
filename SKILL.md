@@ -128,13 +128,21 @@ Output is sorted by match score descending. Present top results to the user grou
 ## Gmail Outreach
 
 ### Prerequisites
-FameClaw uses Google's official [Workspace CLI](https://github.com/googleworkspace/cli) (`gws`) for sending emails. One-time setup:
+FameClaw uses Gmail App Passwords for sending (SMTP) and tracking replies (IMAP). One-time setup:
 
-1. **Install gws** — download from https://github.com/googleworkspace/cli/releases
-2. **Authenticate** — run `gws auth login -s gmail` (opens browser, click Allow)
-3. **Verify** — run `gws auth status` to confirm
+1. Go to **Google Account → Security → 2-Step Verification** → turn ON
+2. Go to **Google Account → Security → App passwords** → generate one
+3. Create `gmail_creds.json`:
+```json
+{
+  "email": "you@gmail.com",
+  "app_password": "xxxx xxxx xxxx xxxx",
+  "display_name": "Your Name"
+}
+```
+4. Test: `python3 scripts/gmail.py test --creds gmail_creds.json`
 
-That's it. No Google Cloud Console, no API keys, no app passwords.
+That's it. No Google Cloud Console, no OAuth, no API keys. Same password handles sending + reply tracking.
 
 ### Step 9: Configure outreach campaign
 Create an `outreach.json` config:
@@ -144,6 +152,7 @@ Create an `outreach.json` config:
   "brand": "MyBrand",
   "website": "https://mybrand.com",
   "sender_name": "Alex",
+  "gmail_creds": "gmail_creds.json",
   "current_partnerships": ["@CreatorA", "@CreatorB", "@CreatorC"],
   "rate": 30,
   "min_score": 25,

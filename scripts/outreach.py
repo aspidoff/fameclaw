@@ -28,6 +28,10 @@ from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).parent
 
+# Import Gmail client
+sys.path.insert(0, str(SCRIPT_DIR))
+from gmail import GmailClient
+
 
 def run_cmd(cmd, timeout=30):
     try:
@@ -48,41 +52,31 @@ def get_videos(handle, count=5):
     return []
 
 
-def send_email(to, subject, body, html=False, dry_run=False, from_addr=""):
-    """Send via gws CLI."""
-    cmd = ["gws", "gmail", "+send", "--to", to, "--subject", subject, "--body", body]
-    if html:
-        cmd.append("--html")
-    if from_addr:
-        cmd.extend(["--from", from_addr])
+_gmail_client = None
 
+def get_gmail(config):
+    global _gmail_client
+    if _gmail_client is None:
+        creds = config.get("gmail_creds", "gmail_creds.json")
+        _gmail_client = GmailClient(creds)
+    return _gmail_client
+
+
+def send_email(to, subject, body, config, html=False, dry_run=False, reply_to_msg_id=None):
+    """Send via SMTP."""
     if dry_run:
         print(f"  [DRY RUN] To: {to}")
         print(f"  Subject: {subject}")
-        print(f"  Body: {body[:200]}...")
-        return True
+        print(f"  Body preview: {body[:200]}...")
+        return True, "dry-run"
 
-    out, code = run_cmd(cmd, timeout=30)
-    return code == 0
-
-
-def check_inbox_for_replies(sent_emails):
-    """Check if any sent-to addresses have replied."""
-    replied = set()
-    for email in sent_emails:
-        out, code = run_cmd(
-            f'gws gmail +triage --query "from:{email} is:unread" --max 5 --format json',
-            timeout=15
-        )
-        if code == 0 and out:
-            try:
-                messages = json.loads(out)
-                if messages and len(messages) > 0:
-                    replied.add(email)
-            except json.JSONDecodeError:
-                if email.lower() in out.lower():
-                    replied.add(email)
-    return replied
+    try:
+        client = get_gmail(config)
+        msg_id = client.send(to, subject, body, html=html, reply_to_msg_id=reply_to_msg_id)
+        return True, msg_id
+    except Exception as e:
+        print(f"  ❌ Send error: {e}")
+        return False, str(e)
 
 
 def generate_first_email(creator, config):
@@ -206,20 +200,10 @@ def save_campaign_state(config_path, state):
         json.dump(state, f, indent=2)
 
 
-def cmd_send(args):
-    """Initial outreach to new contacts."""
-    with open(args.config) as f:
-        config = json.load(f)
-
-    state = load_campaign_state(args.config)
-    rate = config.get("rate", 30)
-    delay = 3600 / rate
-    min_score = config.get("min_score", 0)
-    max_send = config.get("max_per_run", 50)
-
-    # Read CSV
+def load_contacts_from_csv(csv_path, min_score=0):
+    """Read and filter contacts from scored CSV."""
     contacts = []
-    with open(args.csv, newline="") as f:
+    with open(csv_path, newline="") as f:
         reader = csv.reader(f)
         header = next(reader)
         cols = {h.lower().strip(): i for i, h in enumerate(header)}
@@ -253,6 +237,21 @@ def cmd_send(args):
                 "avg_views": row[cols.get("avg_views", 4)] if len(row) > cols.get("avg_views", 4) else "",
                 "score": score,
             })
+    return contacts
+
+
+def cmd_send(args):
+    """Initial outreach to new contacts."""
+    with open(args.config) as f:
+        config = json.load(f)
+
+    state = load_campaign_state(args.config)
+    rate = config.get("rate", 30)
+    delay = 3600 / rate
+    min_score = config.get("min_score", 0)
+    max_send = config.get("max_per_run", 50)
+
+    contacts = load_contacts_from_csv(args.csv, min_score)
 
     sent = 0
     skipped = 0
@@ -266,10 +265,10 @@ def cmd_send(args):
             print(f"\nMax per run ({max_send}) reached. Run again for more.")
             break
 
-        email = c["email"]
+        addr = c["email"]
 
         # Skip already contacted
-        if email in state["contacts"]:
+        if addr in state["contacts"]:
             skipped += 1
             continue
 
@@ -283,23 +282,24 @@ def cmd_send(args):
         subject, body = generate_first_email(c, config)
 
         # Send
-        success = send_email(email, subject, body, dry_run=args.dry_run)
+        success, msg_id = send_email(addr, subject, body, config, dry_run=args.dry_run)
 
         if success:
-            state["contacts"][email] = {
+            state["contacts"][addr] = {
                 "name": c["name"],
                 "handle": c["handle"],
                 "stage": "first",
                 "sent_at": datetime.utcnow().isoformat(),
+                "message_id": msg_id,
                 "videos": c.get("videos", [])[:3],
                 "score": c["score"],
                 "replied": False,
                 "negotiate": False,
             }
             sent += 1
-            print(f"  ✅ Sent to {email}")
+            print(f"  ✅ Sent to {addr}")
         else:
-            print(f"  ❌ Failed: {email}")
+            print(f"  ❌ Failed: {addr}")
 
         if not args.dry_run and sent < max_send:
             time.sleep(delay)
@@ -318,19 +318,30 @@ def cmd_followup(args):
     delay = 3600 / rate
     now = datetime.utcnow()
 
-    # First check for replies
+    # First check for replies via IMAP
     print("Checking for replies first...")
-    all_emails = [e for e, c in state["contacts"].items() if not c.get("replied")]
-    replied = check_inbox_for_replies(all_emails)
-    for email in replied:
-        state["contacts"][email]["replied"] = True
-        state["contacts"][email]["negotiate"] = True
-        state["contacts"][email]["replied_at"] = now.isoformat()
-        print(f"  📬 Reply from {email} ({state['contacts'][email]['name']}) — moved to NEGOTIATE")
+    unreplied = {e: c for e, c in state["contacts"].items() if not c.get("replied")}
+
+    if unreplied:
+        try:
+            client = get_gmail(config)
+            # Find earliest sent date for search window
+            earliest = min(
+                datetime.fromisoformat(c["sent_at"]) for c in unreplied.values()
+            )
+            replies = client.check_replies(list(unreplied.keys()), since_date=earliest)
+            for addr in replies:
+                state["contacts"][addr]["replied"] = True
+                state["contacts"][addr]["negotiate"] = True
+                state["contacts"][addr]["replied_at"] = now.isoformat()
+                print(f"  📬 Reply from {addr} ({state['contacts'][addr]['name']}) → NEGOTIATE")
+        except Exception as e:
+            if not args.dry_run:
+                print(f"  ⚠️ Reply check failed: {e}")
 
     # Find contacts needing follow-up
     followups = []
-    for email, contact in state["contacts"].items():
+    for addr, contact in state["contacts"].items():
         if contact.get("replied") or contact.get("negotiate"):
             continue
 
@@ -339,14 +350,14 @@ def cmd_followup(args):
         days_since = (now - sent_at).days
 
         if stage == "first" and days_since >= STAGE_DELAYS["followup_1"]:
-            followups.append((email, contact, "followup_1"))
+            followups.append((addr, contact, "followup_1"))
         elif stage == "followup_1" and days_since >= STAGE_DELAYS["followup_2"]:
-            followups.append((email, contact, "followup_2"))
+            followups.append((addr, contact, "followup_2"))
 
     print(f"\n=== Follow-ups needed: {len(followups)} ===")
 
     sent = 0
-    for email, contact, next_stage in followups:
+    for addr, contact, next_stage in followups:
         gen = STAGE_GENERATORS[next_stage]
         creator = {
             "name": contact["name"],
@@ -355,14 +366,21 @@ def cmd_followup(args):
         }
         subject, body = gen(creator, config)
 
-        print(f"\n[{sent+1}] {next_stage} → {email} ({contact['name']})")
-        success = send_email(email, subject, body, dry_run=args.dry_run)
+        # Thread follow-ups to original message
+        reply_to = contact.get("message_id")
+
+        print(f"\n[{sent+1}] {next_stage} → {addr} ({contact['name']})")
+        success, msg_id = send_email(
+            addr, subject, body, config,
+            dry_run=args.dry_run, reply_to_msg_id=reply_to
+        )
 
         if success:
             contact["stage"] = next_stage
             contact["sent_at"] = now.isoformat()
+            contact["message_id"] = msg_id
             sent += 1
-            print(f"  ✅ Follow-up sent")
+            print(f"  ✅ Follow-up sent (threaded)")
         else:
             print(f"  ❌ Failed")
 
@@ -381,20 +399,35 @@ def cmd_check_replies(args):
     state = load_campaign_state(args.config)
     now = datetime.utcnow()
 
-    unreplied = [e for e, c in state["contacts"].items() if not c.get("replied")]
+    unreplied = {e: c for e, c in state["contacts"].items() if not c.get("replied")}
     print(f"Checking {len(unreplied)} contacts for replies...")
 
-    replied = check_inbox_for_replies(unreplied)
+    if not unreplied:
+        print("  No pending contacts.")
+        return
 
-    for email in replied:
-        state["contacts"][email]["replied"] = True
-        state["contacts"][email]["negotiate"] = True
-        state["contacts"][email]["replied_at"] = now.isoformat()
-        name = state["contacts"][email]["name"]
-        print(f"  📬 {name} ({email}) — REPLIED → NEGOTIATE")
+    try:
+        client = get_gmail(config)
+        earliest = min(
+            datetime.fromisoformat(c["sent_at"]) for c in unreplied.values()
+        )
+        replies = client.check_replies(list(unreplied.keys()), since_date=earliest)
 
-    if not replied:
-        print("  No new replies.")
+        for addr, msgs in replies.items():
+            state["contacts"][addr]["replied"] = True
+            state["contacts"][addr]["negotiate"] = True
+            state["contacts"][addr]["replied_at"] = now.isoformat()
+            name = state["contacts"][addr]["name"]
+            snippet = msgs[0].get("snippet", "")[:80] if msgs else ""
+            print(f"  📬 {name} ({addr}) → NEGOTIATE")
+            if snippet:
+                print(f"     \"{snippet}...\"")
+
+        if not replies:
+            print("  No new replies.")
+
+    except Exception as e:
+        print(f"  ❌ Error checking replies: {e}")
 
     save_campaign_state(args.config, state)
 

@@ -67,11 +67,13 @@ Send personalized emails to scraped creators using Google's official [Workspace 
 
 ### Setup (one time)
 ```bash
-# Install gws CLI
-# Download from https://github.com/googleworkspace/cli/releases
+# 1. Google Account → Security → 2-Step Verification → ON
+# 2. Google Account → Security → App passwords → Generate
+# 3. Create gmail_creds.json:
+echo '{"email": "you@gmail.com", "app_password": "xxxx xxxx xxxx xxxx", "display_name": "Your Name"}' > gmail_creds.json
 
-# Authenticate (opens browser → click Allow)
-gws auth login -s gmail
+# 4. Test connection
+python3 scripts/gmail.py test --creds gmail_creds.json
 ```
 
 ### Configure campaign
@@ -80,6 +82,7 @@ gws auth login -s gmail
   "brand": "MyBrand",
   "website": "https://mybrand.com",
   "sender_name": "Alex",
+  "gmail_creds": "gmail_creds.json",
   "current_partnerships": ["@CreatorA", "@CreatorB", "@CreatorC"],
   "rate": 30,
   "min_score": 25,
@@ -123,7 +126,8 @@ All emails stop automatically when the creator replies.
 | `find_related_channels.sh` | Discover related channels via YouTube recommendations |
 | `score_channels.py` | Score & rank channels against audience profile |
 | `outreach.py` | Multi-stage outreach pipeline (send, follow-up, reply detection) |
-| `outreach.sh` | Simple one-shot email sender via gws CLI |
+| `gmail.py` | Gmail client — SMTP send + IMAP reply tracking |
+| `outreach.sh` | Simple one-shot email sender (legacy, uses gws CLI) |
 | `get_videos.sh` | Fetch recent video titles for personalization |
 
 ## Config
