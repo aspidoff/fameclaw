@@ -161,7 +161,7 @@
 
 ### Key Numbers
 - **Deal size:** $1,000 (50/50 split, $500 paid)
-- **Outcome:** Creator ghosted after receiving first payment ($500 lost)
+- **Outcome:** Creator ghosted after receiving first payment. Brand recovered $500 via chargeback — but the time wasted was the real loss.
 - **Timeline:** 26 days from cold email to payment, then silence
 - **Payment attempts:** 4 different methods before Stripe worked
 - **Topic alignment:** Never fully resolved (creator wanted Instagram, brand wanted TikTok)
@@ -174,7 +174,7 @@
 4. **Respond fast during negotiation** — eager creators will walk away
 5. **For deals >$500, send a summary email** — "Just to confirm: Topic X, delivered by Date Y, $Z total. Reply 'confirmed' to proceed."
 6. **Set up tracking links before payment** — have the referral URL ready
-7. **If creator ghosts after payment:** Follow up 3x over 2 weeks, then send a formal "we need the deliverable or a refund by [date]" email
+7. **If creator ghosts after payment:** Follow up 3x over 2 weeks, then send a formal "we need the deliverable or a refund by [date]" email. As a last resort, chargeback via payment provider works — but prevention is better than recovery. The real cost is time, not money.
 
 ---
 
