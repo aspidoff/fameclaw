@@ -237,6 +237,40 @@ Each email:
 - **Dry run** — always preview before sending
 - **Campaign state** — saved to `outreach_state.json`, survives restarts
 
+### Step 11: Negotiate with responders
+
+When a creator replies and moves to NEGOTIATE stage, follow the **Negotiation Playbook** (`references/negotiation_playbook.md`). Summary:
+
+**Phase 1 — Discovery (don't pitch yet):**
+Ask the creator:
+1. Audience demographics (top countries, age/gender breakdown)
+2. Rates per post/video + volume discounts
+3. Past brand collaboration examples
+
+Ask the brand owner (user):
+1. Budget range (max and ideal per creator)
+2. Negotiation style: **Friendly** (meet their price) / **Value-focused** (counter, anchor low) / **Budget-strict** (hard cap, walk away)
+3. Deal-breakers (geography, competing products, minimum subs)
+4. Payment terms preference
+
+**Phase 2 — Evaluate:**
+- 🔴 Deprioritize if: creator sells competing products, audience is wrong geography, no past brand work + premium rates
+- 🟢 Push harder if: audience matches, proven integration format, quick responses, rates near budget
+
+**Phase 3 — Counter-offer:**
+- Anchor at 60-70% of their ask, frame as "first of many"
+- Propose creative structure (3 × short integrations vs 1 dedicated)
+- Bundle channels if they have YouTube + newsletter + Discord
+- 50/50 payment: half upfront, half after delivery (before publishing)
+
+**Phase 4 — Follow-up cadence:**
+- Day 0: Counter-offer → Day 3: Gentle bump → Day 7: "Still interested?" → Day 14: Respectful close
+- Max 3 follow-ups per round. If ghosted → STALE. Re-engage in 3-6 months.
+
+**Phase 5 — Close:**
+- Recap deal in writing, get explicit "confirmed" reply
+- Send first payment, set delivery deadline, request draft preview before publishing
+
 ### Automate with cron
 Set up follow-ups and reply checking on a schedule:
 
