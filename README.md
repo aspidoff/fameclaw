@@ -20,13 +20,29 @@
 8. **Negotiate** autonomously — reads replies, counters, closes deals
 9. **Agent Mail** — persistent inbox monitoring that handles the entire pipeline hands-free
 
+## Email Providers
+
+FameClaw supports two ways to send/receive emails:
+
+### Option A: Bring Your Own Email (SMTP/IMAP)
+Use your existing Gmail, Outlook, iCloud, or any SMTP server. Your emails go through your own account — nothing touches a third party.
+
+### Option B: AgentMail (agentmail.to)
+Dedicated AI agent email infrastructure. No app passwords, no Gmail setup. Get a dedicated outreach inbox with proper deliverability (SPF/DKIM/DMARC) out of the box.
+
+```bash
+pip install agentmail
+python3 scripts/agentmail_provider.py setup --api-key "am_..." --display-name "Alex from MyBrand"
+```
+
+Both options store config locally at `~/.config/fameclaw/gmail.json`. FameClaw auto-detects which provider to use.
+
 ## Privacy
 
-- All data stays on your device — CSVs, emails, credentials, campaign state
-- Gmail credentials stored locally (`~/.config/fameclaw/gmail.json`, mode 600)
-- No external APIs, no cloud services, no telemetry, no tracking
-- Emails sent directly from your mailbox via SMTP — no middleman
-- Works with Gmail, Outlook, iCloud, Yahoo, Zoho, Fastmail, or any SMTP server
+- All data stays on your device — CSVs, credentials, campaign state
+- No telemetry, no tracking
+- SMTP/IMAP: emails sent directly from your mailbox — no middleman
+- AgentMail: emails sent via agentmail.to infrastructure (their [privacy policy](https://www.agentmail.to) applies)
 - Open source — read every line of code yourself
 
 ## Quick Start
