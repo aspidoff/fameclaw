@@ -1,8 +1,8 @@
 # 🐾 FameClaw
 
-YouTube creator outreach prospector. Find creators by niche, extract emails + stats, score them by audience fit, and batch-scrape to CSV.
+Open-source YouTube creator outreach — from finding creators to closing deals.
 
-No API keys. No dependencies. Just `curl` + `python3`.
+**100% local.** Your data, emails, and credentials never leave your machine. Nothing is sent to any server, ever. No API keys, no cloud services, no tracking. Just `curl` + `python3`.
 
 ## What It Does
 
@@ -11,7 +11,17 @@ No API keys. No dependencies. Just `curl` + `python3`.
 3. **Extract** channel stats: subscribers, views, emails, descriptions
 4. **Discover** related channels via YouTube's recommendation algorithm
 5. **Score** every channel against your brand's audience profile (0-100)
-6. **Export** ranked CSV with match type: demographic, authority, or both
+6. **Email** the best matches — personalized, mentions their actual videos
+7. **Follow up** automatically — day 3 and day 8 if no reply
+8. **Negotiate** autonomously — reads replies, counters, closes deals
+
+## Privacy
+
+- All data stays on your device — CSVs, emails, credentials, campaign state
+- Gmail credentials stored locally (`~/.config/fameclaw/gmail.json`, mode 600)
+- No external APIs, no cloud services, no telemetry, no tracking
+- Emails sent directly from your Gmail via SMTP — no middleman
+- Open source — read every line of code yourself
 
 ## Quick Start
 
