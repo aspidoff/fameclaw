@@ -1,16 +1,45 @@
-MIT License
+# FameClaw License
 
-Copyright (c) 2026 Serg Aspidoff / Sergey Aspidov
+## Functional Source License (FSL-1.1-MIT) with Revenue Threshold
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Copyright (c) 2026 Serg Aspidoff / Sergey Aspidov — Pocketsnap
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+### Grant of Rights
+
+Permission is hereby granted, free of charge, to any person or organization
+(the "Licensee") obtaining a copy of this software and associated
+documentation files (the "Software"), to use, copy, modify, and distribute
+the Software, subject to the following conditions:
+
+### Revenue Threshold — Commercial License Required
+
+If the Licensee (including its parent company, subsidiaries, and affiliates)
+generates **more than One Million US Dollars (USD $1,000,000) in annual
+gross revenue**, the Licensee must obtain a commercial license from the
+copyright holder to use the Software in any capacity (including internal use,
+integration into products/services, or distribution).
+
+To obtain a commercial license, contact: **licensing@pocketsnap.com**
+
+### Free Use
+
+Licensees generating **$1,000,000 or less** in annual gross revenue may use
+the Software under the terms of the MIT License below.
+
+### MIT License Terms (for eligible Licensees)
+
+Permission is hereby granted, free of charge, to any eligible Licensee
+(as defined above) to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to permit
+persons to whom the Software is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice, this permission notice, and the revenue threshold
+clause shall be included in all copies or substantial portions of the
+Software.
+
+### Disclaimer
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -19,3 +48,8 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+### Change Date
+
+Two years after each release date, that release converts to the standard MIT
+License with no revenue restriction.
