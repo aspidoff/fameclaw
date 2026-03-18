@@ -208,6 +208,7 @@ def generate_discovery_response(contact, neg_config):
     """First response after creator shows interest — ask for demographics + rates."""
     name = contact.get("name", "").split()[0]  # First name
     sender = neg_config.get("sender_name", "")
+    brand = neg_config.get("brand", "")
 
     body = f"""Hey {name},
 
@@ -219,10 +220,10 @@ Before we put something together, a few quick questions:
 2. What are your rates for a video integration? Do you offer discounts for multiple videos?
 3. Have any examples of past brand collabs you've done?
 
-Happy to work with whatever format suits you best.
+Happy to work with whatever format suits you best — if you already have a video in production where {brand} would be a natural fit, even better.
 
 {sender}"""
-    return f"Re: Collaboration with {neg_config.get('brand', '')}", body
+    return f"Re: Collaboration with {brand}", body
 
 
 def generate_counter_offer(contact, neg_config, their_price=None):
@@ -230,18 +231,26 @@ def generate_counter_offer(contact, neg_config, their_price=None):
     name = contact.get("name", "").split()[0]
     sender = neg_config.get("sender_name", "")
     brand = neg_config.get("brand", "")
+    website = neg_config.get("website", "")
     style = neg_config.get("negotiation_style", "value-focused")
     budget_max = neg_config.get("budget_max")
     budget_min = neg_config.get("budget_min")
     payment = neg_config.get("payment_terms", "50/50")
+    affiliate_url = neg_config.get("affiliate_url", "")
 
     # Determine offer price
     if their_price and budget_max:
         if style == "friendly":
-            offer = min(their_price, budget_max)
+            # If within budget, close immediately — don't counter
+            if their_price <= budget_max:
+                return generate_instant_close(contact, neg_config, their_price)
+            offer = budget_max
         elif style == "budget-strict":
             offer = budget_min or (budget_max * 0.5)
         else:  # value-focused
+            # If price is well within budget (<70%), close fast
+            if their_price <= (budget_max * 0.7):
+                return generate_instant_close(contact, neg_config, their_price)
             offer = min(their_price * 0.65, budget_max)
             if budget_min and offer < budget_min:
                 offer = budget_min
@@ -250,12 +259,11 @@ def generate_counter_offer(contact, neg_config, their_price=None):
     elif budget_max:
         offer = budget_max * 0.6
     else:
-        # No budget info — can't counter, need to ask brand owner
         return None, None
 
-    offer = int(round(offer, -1))  # Round to nearest 10
+    offer = int(round(offer, -1))
 
-    # Payment terms explanation
+    # Payment terms
     if payment == "50/50":
         payment_text = "50% upfront, 50% after delivery (before publishing)"
     elif payment == "full_upfront":
@@ -265,17 +273,57 @@ def generate_counter_offer(contact, neg_config, their_price=None):
     else:
         payment_text = payment
 
+    # Affiliate sweetener
+    affiliate_text = ""
+    if affiliate_url:
+        affiliate_text = f"\n\nWe also have an affiliate program ({affiliate_url}) — you'd earn ongoing revenue from any sales driven by your content, on top of the flat fee."
+
     body = f"""Hey {name},
 
 Thanks for the details — your audience looks like a strong fit for {brand}.
 
-Here's what we're thinking: a video integration for ${offer:,}. This would be the start of an ongoing partnership — if it performs well, we'd want to do several more this quarter.
+Here's what we're thinking: a video integration for ${offer:,}, plus a performance bonus of ${int(offer * 0.5):,} if the video hits 10K views in 30 days.
 
-Payment: {payment_text}. PayPal, Stripe, or wire — whatever works for you.
+This would be the start of an ongoing partnership — if it performs well, we'd want to do several more this quarter.
 
-If you're open to bundling (say 3 videos), we can definitely talk a better rate.
+Payment: {payment_text}. PayPal, Stripe, or wire — whatever works for you.{affiliate_text}
 
-What do you think?
+We'd love to review the script before recording to make sure everything's accurate. What do you think?
+
+{sender}"""
+
+    subject = f"Re: Collaboration with {brand}"
+    return subject, body
+
+
+def generate_instant_close(contact, neg_config, their_price):
+    """When price is within budget — close immediately, don't counter."""
+    name = contact.get("name", "").split()[0]
+    sender = neg_config.get("sender_name", "")
+    brand = neg_config.get("brand", "")
+    payment = neg_config.get("payment_terms", "50/50")
+    affiliate_url = neg_config.get("affiliate_url", "")
+
+    if payment == "50/50":
+        payment_text = "50% upfront, 50% after delivery (before publishing)"
+    else:
+        payment_text = payment
+
+    affiliate_text = ""
+    if affiliate_url:
+        affiliate_text = f"\n\nWe also have an affiliate program ({affiliate_url}) — ongoing revenue from any sales your content drives, on top of the flat fee."
+
+    body = f"""Hey {name},
+
+We have a deal. ${int(their_price):,} works for us.
+
+Please send us a PayPal or Stripe invoice, and we'll get that sent right away. Payment terms: {payment_text}.
+
+A couple things before we kick off:
+1. Could you send your channel demographics (top countries, age/gender)? Helps us track ROI.
+2. We'd love to review the script/talking points before you record — just to make sure everything's accurate.{affiliate_text}
+
+Looking forward to this!
 
 {sender}"""
 

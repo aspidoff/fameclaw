@@ -42,7 +42,8 @@ Once you have demographics + rates, evaluate before countering:
 - Creator has done similar integrations before (proven format)
 - They responded quickly and seem eager
 - Their rates are within or near budget
-- They propose creative ideas themselves
+- **Creator proposes their own video idea** — this is the best signal. They're already thinking about how to make it work. Close fast.
+- Creator has a **relevant video already in production** — perfect natural integration opportunity
 
 ---
 
@@ -76,6 +77,31 @@ Once you have demographics + rates, evaluate before countering:
 **6. Never name your max first**
 - Always ask "What are your rates?" before proposing
 - If they name a price, you counter. If you name first, you anchor yourself.
+
+**7. Close fast when price is right**
+- If their rate is within budget, don't counter — say "we have a deal" immediately
+- Speed builds trust and locks in before they reconsider
+- Send payment same day if possible
+
+**8. Stack value with affiliate/rev-share**
+- Offer affiliate program on top of flat fee
+- Creates ongoing passive income for creator beyond the one-time payment
+- Makes a lower flat fee more attractive
+
+**9. Request demographics BEFORE agreeing on price**
+- Ask for audience breakdown (countries, age, gender) during discovery
+- Use it to justify your counter-offer if demographics are weak
+- Never renegotiate after verbal agreement — it damages trust
+
+**10. Script review before recording**
+- Always request to review the script/talking points before they record
+- Ensures messaging accuracy, prevents surprises
+- Professional workflow that protects both sides
+
+**11. Build performance terms into the initial deal**
+- "Base fee + bonus if video hits X views in 30 days"
+- Aligns creator incentives with brand goals
+- Never try to add performance terms after delivery — creator will refuse
 
 ---
 
