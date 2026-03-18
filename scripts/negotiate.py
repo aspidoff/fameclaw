@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Serg Aspidoff / Sergey Aspidov, Pocketsnap LLC. Licensed under FSL-1.1-MIT.
 # Use is permitted for non-competing purposes. Competing use requires a license.
-# Converts to MIT on 2028-03-18. See LICENSE-FSL.
+# See LICENSE-FSL.
 """FameClaw Negotiate Engine — Autonomous creator negotiation.
 
 Reads replies, classifies them, generates responses, sends them.
