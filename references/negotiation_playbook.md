@@ -30,6 +30,15 @@ Before making any offer, the agent should clarify with the user:
 
 Once you have demographics + rates, evaluate before countering:
 
+### CPM sanity check (run before countering)
+Before making any counter-offer, calculate what the creator's views are actually worth:
+- **Formula:** (Avg views × USA audience %) × ($10 CPM / 1000) = fair value
+- If creator's price is **within 2x** of CPM value → negotiable, close fast
+- If creator's price is **2-4x** CPM → counter with creative structure
+- If creator's price is **4x+** CPM → probably a mismatch, unless they have exceptional engagement
+
+Example: 700K avg views × 40% USA = 280K USA views × $10/1000 = $2,800 CPM value. Creator asks $8K = 2.8x → worth negotiating.
+
 ### Red flags (deprioritize):
 - Creator sells **competing products** through their channel (they'll always price you out)
 - Audience is **wrong geography** (>50% outside target markets)
@@ -83,10 +92,11 @@ Once you have demographics + rates, evaluate before countering:
 - Speed builds trust and locks in before they reconsider
 - Send payment same day if possible
 
-**8. Stack value with affiliate/rev-share**
-- Offer affiliate program on top of flat fee
+**8. Stack value with affiliate/rev-share (as bonus, never replacement)**
+- Offer affiliate program ON TOP of flat fee — never as a substitute
 - Creates ongoing passive income for creator beyond the one-time payment
 - Makes a lower flat fee more attractive
+- **Never offer affiliate-only to content-first creators** — if their videos ARE the sponsorship (they wouldn't make the video without a sponsor), they need a flat fee. Affiliate-only = asking them to work for free.
 
 **9. Request demographics BEFORE agreeing on price**
 - Ask for audience breakdown (countries, age, gender) during discovery

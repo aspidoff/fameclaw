@@ -178,6 +178,84 @@
 
 ---
 
+## Case Study D: $8K Ask — High-Performance Creator, Price Standoff
+
+### Creator Stats (at time of negotiation)
+- **Subscribers:** ~200K+
+- **Videos:** ~13 (very low output, high quality)
+- **Avg views:** 733K per video
+- **Median views:** 386K
+- **View range:** 129K–2.3M
+- **View/sub ratio:** 3.5x — extremely high (typical is 0.1–0.3x)
+- **Past sponsors:** 2 brands across 3 videos, all 100K+ views
+- **Content style:** High-production challenge/experiment format ("I Tried X for Y Days")
+
+### Timeline (11 emails over 5 months)
+
+| Phase | Who | Move |
+|-------|-----|------|
+| Day 1 | Brand Rep | **Same 3-sentence cold email.** |
+| Day 3 | Brand Rep | **Follow-up #1.** |
+| Day 7 | Brand Rep | **Follow-up #2.** |
+| Day 27 | Brand Rep | **Follow-up #3** with social proof: "We signed a few influencers but looking for more." |
+| **Month 4** | Creator D | **Replies 4 months later.** "I would be interested. Can we have a chat?" |
+| Month 4 | Brand Rep | **Immediate discovery.** Asks for demographics + rates. No wasted time. |
+| Month 4 | Creator D | **Transparent pitch.** Sends demographics, explains low sponsor count (only 2 prior), proposes specific video concept: "I revived a dead YouTube channel" — naturally uses the brand in the video. Asks **$8K for a 30-45s mid-roll.** |
+| Month 4 | Brand Rep | **Pivots to affiliate instead.** "Since you'd be using the platform anyway, it wouldn't make sense to do an ad. We can offer 30% affiliate share instead. For follow-up videos, we can negotiate a mid-roll." |
+| Month 4 | Creator D | **Rejects affiliate.** "I would not create the video if it wasn't an ad. All my videos are created around a sponsorship." |
+| Month 4 | Creator D | **Follows up.** "Could you let me know where we stand? I'd love to get this rolling." |
+| Month 5 | Brand Rep | **Challenges price.** "We cannot approve $8K unless you can explain how you arrived at that number. Are we missing something regarding RPM or audience?" |
+| Month 5+ | | **Thread went cold.** |
+
+### What Worked
+
+**1. Persistence pays — 4-month delayed reply**
+- Creator didn't reply for 4 months, then came back interested
+- The 4th follow-up with social proof ("we signed a few influencers") likely helped
+- **Lesson:** Never delete "no response" contacts. They come back.
+
+**2. Immediate discovery on reply**
+- When creator finally responded, brand rep asked demographics + rates right away
+- No small talk, no calls — kept it in email for speed and documentation
+
+**3. Creator proposed the perfect video concept**
+- "I revived a dead YouTube channel" using the brand's platform
+- Natural, authentic integration — not a forced ad read
+
+### What Didn't Work
+
+**4. Affiliate counter was wrong for this creator**
+- Creator's entire business model = videos built around sponsorships
+- Suggesting affiliate instead of paid = telling them to work for free
+- Creator explicitly said: "I would not create the video if it wasn't an ad"
+- **Lesson:** Don't offer affiliate-only to creators whose content IS the sponsorship. Affiliate works as a sweetener on top of flat fee, not a replacement.
+
+**5. Didn't justify why $8K was too high**
+- Creator gets 100K–700K+ views per video with only 2 prior sponsors
+- At $10 CPM, $8K is actually reasonable for ~200K+ USA views
+- Brand asked "how did you arrive at that number?" — but the math actually checks out
+- **Lesson:** Before rejecting a price, run the CPM math. If their views justify it, either pay it or be honest about budget limits. Don't make them defend a fair price.
+
+**6. Slow response killed momentum**
+- Creator followed up asking "where do we stand?" — brand took a week+ to respond
+- Creator who came back after 4 months of silence is clearly interested — don't let them cool off again
+
+### Key Numbers
+- **Ask:** $8K for 30-45s mid-roll
+- **Views/video:** 733K average, 386K median
+- **CPM math:** At $10 CPM × ~200K USA views = $2K value. At full views (~700K) with 40% USA = $2.8K. Creator's $8K ask implies premium for full-video integration (not just mid-roll).
+- **Outcome:** No deal — price gap + wrong counter-strategy (affiliate vs paid)
+
+### Lessons for FameClaw
+
+1. **Run CPM math before countering** — calculate what the views are worth at $10 CPM × estimated USA views. If the creator's price is within 2x of CPM value, it's negotiable. If it's 4x+, it may be a mismatch.
+2. **Never offer affiliate-only to content-first creators** — if their videos ARE the sponsorship, they need a flat fee. Use affiliate as a bonus on top.
+3. **Don't let momentum die on hot leads** — creator who comes back after months is motivated. Respond within 24 hours.
+4. **4th follow-up with social proof works** — "we signed a few influencers" creates FOMO.
+5. **High view/sub ratio (>1.0) = premium creator** — these channels have strong algorithm performance. Their prices will be higher but their ROI potential is too.
+
+---
+
 ## Case Study A: Failed Deal — Creator Had Competing Product
 
 ### Timeline (17 emails over 7+ months)
