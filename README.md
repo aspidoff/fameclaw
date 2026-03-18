@@ -1,6 +1,10 @@
-# 🐾 FameClaw
+<p align="center">
+  <img src="logo.jpg" alt="FameClaw" width="200"/>
+</p>
 
-Open-source YouTube creator outreach — from finding creators to closing deals.
+<h1 align="center">FameClaw</h1>
+
+<p align="center">Open-source YouTube creator outreach — from finding creators to closing deals.</p>
 
 **100% local.** Your data, emails, and credentials never leave your machine. Nothing is sent to any server, ever. No API keys, no cloud services, no tracking. Just `curl` + `python3`.
 
