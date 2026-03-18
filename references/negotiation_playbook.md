@@ -127,11 +127,20 @@ Once you have demographics + rates, evaluate before countering:
 
 When both sides agree on terms:
 
-1. **Recap in writing** — "Just to confirm: [X videos/posts], [format], [$amount], [payment terms], [timeline]"
-2. **Get explicit confirmation** — creator must reply "yes" or "confirmed"
-3. **Send payment** — first installment per agreed terms
-4. **Set deadlines** — "Looking forward to the video by [date]. Send us a draft/preview before publishing?"
-5. **Track delivery** — mark contact as ACTIVE_DEAL in campaign state
+1. **Ask for payment method immediately** — "Is PayPal/Stripe ok?" Don't wait until the deal is done to figure out logistics. Accept multiple options (PayPal, Stripe, Wise).
+2. **Agree on exact topic/title** — do NOT send payment until both sides agree on what's being made. If the creator's proposed topic doesn't match your goals, redirect before closing.
+3. **Recap in writing** — "Just to confirm: [topic/title], [format], [$amount], [payment terms], [deadline], [tracking link]. Reply 'confirmed' to proceed."
+4. **Get explicit confirmation** — creator must reply "yes" or "confirmed"
+5. **Set up tracking** — create referral link (e.g. `?r=creatorhandle`) before payment
+6. **Milestone-based payment** — "50% on script/draft approval, 50% before publishing." Never pay 50% upfront before seeing any deliverable.
+7. **For deals >$500** — send a summary email that reads like a simple contract. Includes: topic, format, deliverable, deadline, payment terms, refund clause if not delivered.
+8. **Track delivery** — mark contact as ACTIVE_DEAL in campaign state
+9. **Respond within 24 hours** during the close phase — eager creators lose interest fast
+
+### If creator ghosts after payment:
+1. Follow up 3x over 2 weeks
+2. Send formal email: "We need the deliverable by [date] or a refund of $X"
+3. If no response after 30 days, mark as LOST and note for future reference
 
 ---
 

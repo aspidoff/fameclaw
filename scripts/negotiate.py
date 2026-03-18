@@ -317,11 +317,14 @@ def generate_instant_close(contact, neg_config, their_price):
 
 We have a deal. ${int(their_price):,} works for us.
 
-Please send us a PayPal or Stripe invoice, and we'll get that sent right away. Payment terms: {payment_text}.
+Before we process payment, a few quick things:
 
-A couple things before we kick off:
-1. Could you send your channel demographics (top countries, age/gender)? Helps us track ROI.
-2. We'd love to review the script/talking points before you record — just to make sure everything's accurate.{affiliate_text}
+1. What video topic/title are you thinking? We want to make sure we're aligned before anything starts.
+2. Could you send your channel demographics (top countries, age/gender)? Helps us track ROI.
+3. What's your preferred payment method — PayPal, Stripe, or Wise? We'll need an invoice link.
+4. Payment terms: {payment_text} — first half on script/draft approval.
+
+We'll also set up a tracking link for your video description so we can measure performance.{affiliate_text}
 
 Looking forward to this!
 

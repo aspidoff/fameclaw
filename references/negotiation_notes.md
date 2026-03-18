@@ -85,6 +85,99 @@
 
 ---
 
+## Case Study C: $1,000 Dedicated Video — Payment Friction + Creator Ghosted Post-Payment
+
+### Timeline (19 emails, ~5 weeks — deal closed but creator went silent after receiving 50% upfront)
+
+| Phase | Who | Move |
+|-------|-----|------|
+| Day 1 | Brand Rep | **Same 3-sentence cold email.** |
+| Day 1 | Creator C | **Instant enthusiasm.** Proposes a full dedicated video idea + reference video link. Asks for budget. |
+| Day 1 | Brand Rep | **Steers the topic.** Likes the idea but redirects to TikTok/YouTube focus (not Instagram). Introduces CPM-based pricing: "$10 CPM for USA views." Asks for demographics. Also offers flat fee for production costs. |
+| Day 3 | Brand Rep | **Follow-up.** "Just touching base." Asks for demographics + whether they've done sponsored videos before. |
+| Day 3 | Creator C | **Names price without demographics.** "Minimum $1,000." Skips the demographics question entirely. Frames it as take-it-or-leave-it. |
+| Day 3 | Brand Rep | **Accepts price, pivots to info-gathering.** "We're comfortable with that spend, we just want the right demographic." Asks for RPM + demographics. Also floats multi-video deal: "Would you be open to 60-90s mid-roll across a few videos?" |
+| Day 5 | Creator C | **Sends demographics + RPM.** $12 RPM. Confident video will perform well based on recent channel momentum. |
+| Day 7 | Brand Rep | **Closes deal.** Asks for: video title proposals, PayPal for 50/50 payment, turnaround time. Creates custom referral link for tracking. |
+| Day 8 | Creator C | **Proposes Instagram titles** (not TikTok/YouTube). Doesn't have PayPal — wants bank transfer. Accepts 50/50 split. Says 2-week turnaround. |
+| Day 11 | Creator C | **Gets impatient.** "Can you update me on if this is still happening, or should we move forward without you?" |
+| Day 13 | Brand Rep | **Apologizes for delay.** Redirects titles to TikTok/YouTube (again). Asks for invoice link (Wise/Stripe) since bank transfer is complicated. |
+| Day 16 | Brand Rep | **Follow-up on payment method.** |
+| Day 17 | Creator C | **Sends Wise link** (in GBP). |
+| Day 19 | Creator C | **Sends Payoneer link** (Wise link was wrong currency). |
+| Day 21 | Brand Rep | **Accepts Payoneer.** "Will process payment this week." |
+| Day 21 | Creator C | **Payoneer link expired.** Sends Stripe link instead. |
+| Day 26 | Brand Rep | **Sends first 50% payment via Stripe.** Suggests TikTok video titles. "Whatever you think fits best — you know your audience." |
+| Day 31 | Brand Rep | **Follow-up.** Asks for update. |
+| Day 35 | Brand Rep | **Final follow-up.** "Are you available to respond?" |
+| Day 35+ | Creator C | **Ghosted.** No response after receiving payment. |
+
+### What Worked
+
+**1. CPM-based pricing as anchor**
+- Introduced "$10 CPM for USA views" early — sets a framework
+- Creator ignored it and named their flat rate ($1K) anyway
+- But it established the brand as someone who understands metrics, not just "how much do you charge?"
+
+**2. Custom referral/tracking link**
+- Created `?r=creatorname` link for the video
+- Allows tracking exact ROI from the collaboration
+- **Lesson for FameClaw:** Always set up tracking links before payment
+
+**3. Accepted price quickly when within budget**
+- Creator said $1K, brand said "we're comfortable" on the same day
+- Kept momentum going
+
+**4. Suggested video topics but deferred to creator**
+- "Whatever you think would fit best with your audience. You know it best."
+- Shows trust, gives creative freedom, but steers toward brand goals
+
+### What Didn't Work
+
+**5. Payment method friction almost killed the deal**
+- Creator didn't have PayPal → bank transfer → Wise (wrong currency) → Payoneer (expired) → Stripe
+- 2 weeks wasted on payment logistics
+- **Lesson:** Ask for payment method EARLY in negotiation. Accept Stripe/PayPal/Wise — have multiple options ready.
+
+**6. Paid 50% before seeing any deliverable**
+- Creator received $500 upfront with no script, no timeline, no milestone
+- Then ghosted
+- **Lesson:** First payment should be tied to a milestone — "50% on script approval" not "50% upfront before anything"
+
+**7. Didn't lock down topic before payment**
+- Creator proposed Instagram titles, brand wanted TikTok/YouTube
+- This was still unresolved when payment was sent
+- **Lesson:** Agree on exact topic/title BEFORE processing payment
+
+**8. Slow response time from brand**
+- Creator followed up asking "is this still happening?" on Day 11
+- Brand took 2+ days to respond multiple times
+- Eager creators lose interest fast — respond within 24 hours during negotiation
+
+**9. No contract or written agreement**
+- Just informal email chain — no deliverables list, no deadline, no refund clause
+- When creator ghosted, no recourse
+- **Lesson:** For deals >$500, even a simple email summary with explicit terms ("video delivered by X date or refund") creates accountability
+
+### Key Numbers
+- **Deal size:** $1,000 (50/50 split, $500 paid)
+- **Outcome:** Creator ghosted after receiving first payment ($500 lost)
+- **Timeline:** 26 days from cold email to payment, then silence
+- **Payment attempts:** 4 different methods before Stripe worked
+- **Topic alignment:** Never fully resolved (creator wanted Instagram, brand wanted TikTok)
+
+### Critical Lessons for FameClaw
+
+1. **Payment milestones, not upfront splits** — "50% on script approval, 50% before publishing" not "50% before anything starts"
+2. **Lock down the topic/title before any payment** — don't pay until both sides agree on what's being made
+3. **Ask for payment method on Day 1** — "Is PayPal/Stripe ok?" right when they show interest
+4. **Respond fast during negotiation** — eager creators will walk away
+5. **For deals >$500, send a summary email** — "Just to confirm: Topic X, delivered by Date Y, $Z total. Reply 'confirmed' to proceed."
+6. **Set up tracking links before payment** — have the referral URL ready
+7. **If creator ghosts after payment:** Follow up 3x over 2 weeks, then send a formal "we need the deliverable or a refund by [date]" email
+
+---
+
 ## Case Study A: Failed Deal — Creator Had Competing Product
 
 ### Timeline (17 emails over 7+ months)
