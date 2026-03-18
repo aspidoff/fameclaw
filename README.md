@@ -239,4 +239,6 @@ FameClaw is also available as an [OpenClaw](https://github.com/openclaw/openclaw
 
 **MIT** — most of FameClaw is fully open source.
 
-**Commercial License** — the scoring engine (`score_channels.py`) and negotiation engine (`negotiate.py`) are source-available under a commercial license. Free for personal use. Commercial use requires a license from [Pocketsnap LLC](mailto:hello@pocketsnap.com). See [LICENSE-COMMERCIAL](LICENSE-COMMERCIAL).
+**[FSL-1.1-MIT](LICENSE-FSL)** — the scoring engine (`score_channels.py`) and negotiation engine (`negotiate.py`) are licensed under the [Functional Source License](https://fsl.software). You can use, modify, and redistribute them for any purpose **except** building a competing product. On **March 18, 2028**, these files automatically convert to MIT.
+
+© 2026 [Pocketsnap LLC](mailto:hello@pocketsnap.com)
