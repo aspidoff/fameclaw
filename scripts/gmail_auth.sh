@@ -34,11 +34,24 @@ case "${1:-help}" in
     FROM_EMAIL="${FROM_EMAIL:-$EMAIL}"
     printf "Display name (e.g. 'Alex from MyBrand'): "
     read -r DISPLAY_NAME
+    printf "Provider (gmail/outlook/icloud/yahoo/zoho/fastmail, or Enter for auto-detect): "
+    read -r PROVIDER
 
     PASSWORD=$(echo "$PASSWORD" | tr -d ' ')
 
     mkdir -p "$CREDS_DIR"
-    cat > "$CREDS_FILE" << EOF
+    if [ -n "$PROVIDER" ]; then
+      cat > "$CREDS_FILE" << EOF
+{
+  "email": "$EMAIL",
+  "app_password": "$PASSWORD",
+  "from_email": "$FROM_EMAIL",
+  "display_name": "$DISPLAY_NAME",
+  "provider": "$PROVIDER"
+}
+EOF
+    else
+      cat > "$CREDS_FILE" << EOF
 {
   "email": "$EMAIL",
   "app_password": "$PASSWORD",
@@ -46,6 +59,7 @@ case "${1:-help}" in
   "display_name": "$DISPLAY_NAME"
 }
 EOF
+    fi
     chmod 600 "$CREDS_FILE"
     echo ""
     echo "✅ Saved to $CREDS_FILE (mode 600)"

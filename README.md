@@ -20,7 +20,8 @@ Open-source YouTube creator outreach — from finding creators to closing deals.
 - All data stays on your device — CSVs, emails, credentials, campaign state
 - Gmail credentials stored locally (`~/.config/fameclaw/gmail.json`, mode 600)
 - No external APIs, no cloud services, no telemetry, no tracking
-- Emails sent directly from your Gmail via SMTP — no middleman
+- Emails sent directly from your mailbox via SMTP — no middleman
+- Works with Gmail, Outlook, iCloud, Yahoo, Zoho, Fastmail, or any SMTP server
 - Open source — read every line of code yourself
 
 ## Quick Start

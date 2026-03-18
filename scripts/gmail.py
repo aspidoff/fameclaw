@@ -24,11 +24,41 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
+DEFAULT_CREDS = Path.home() / ".config" / "fameclaw" / "gmail.json"
+
+# Provider presets — users just set "provider" in their config
+PROVIDERS = {
+    "gmail": {
+        "smtp_host": "smtp.gmail.com", "smtp_port": 587,
+        "imap_host": "imap.gmail.com", "imap_port": 993,
+    },
+    "outlook": {
+        "smtp_host": "smtp.office365.com", "smtp_port": 587,
+        "imap_host": "outlook.office365.com", "imap_port": 993,
+    },
+    "icloud": {
+        "smtp_host": "smtp.mail.me.com", "smtp_port": 587,
+        "imap_host": "imap.mail.me.com", "imap_port": 993,
+    },
+    "yahoo": {
+        "smtp_host": "smtp.mail.yahoo.com", "smtp_port": 587,
+        "imap_host": "imap.mail.yahoo.com", "imap_port": 993,
+    },
+    "zoho": {
+        "smtp_host": "smtp.zoho.com", "smtp_port": 587,
+        "imap_host": "imap.zoho.com", "imap_port": 993,
+    },
+    "fastmail": {
+        "smtp_host": "smtp.fastmail.com", "smtp_port": 587,
+        "imap_host": "imap.fastmail.com", "imap_port": 993,
+    },
+}
+
+# Default (Gmail) for backwards compatibility
 SMTP_HOST = "smtp.gmail.com"
 SMTP_PORT = 587
 IMAP_HOST = "imap.gmail.com"
 IMAP_PORT = 993
-DEFAULT_CREDS = Path.home() / ".config" / "fameclaw" / "gmail.json"
 
 
 class GmailClient:
@@ -39,6 +69,34 @@ class GmailClient:
         self.from_email = creds.get("from_email", creds["email"])  # alias for From header
         self.password = creds["app_password"].replace(" ", "")
         self.display_name = creds.get("display_name", "")
+
+        # Provider detection — explicit, auto-detect from email domain, or custom
+        provider = creds.get("provider", "").lower()
+        if not provider:
+            # Auto-detect from email domain
+            domain = self.login_email.split("@")[1].lower()
+            if "gmail" in domain or "googlemail" in domain:
+                provider = "gmail"
+            elif "outlook" in domain or "hotmail" in domain or "live.com" in domain or "office365" in domain:
+                provider = "outlook"
+            elif "icloud" in domain or "me.com" in domain or "mac.com" in domain:
+                provider = "icloud"
+            elif "yahoo" in domain:
+                provider = "yahoo"
+            elif "zoho" in domain:
+                provider = "zoho"
+            elif "fastmail" in domain:
+                provider = "fastmail"
+            else:
+                provider = "gmail"  # fallback
+
+        preset = PROVIDERS.get(provider, PROVIDERS["gmail"])
+
+        # Allow custom overrides
+        self.smtp_host = creds.get("smtp_host", preset["smtp_host"])
+        self.smtp_port = creds.get("smtp_port", preset["smtp_port"])
+        self.imap_host = creds.get("imap_host", preset["imap_host"])
+        self.imap_port = creds.get("imap_port", preset["imap_port"])
 
     def _from_addr(self):
         if self.display_name:
@@ -65,7 +123,7 @@ class GmailClient:
             msg["References"] = reply_to_msg_id
 
         ctx = ssl.create_default_context()
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+        with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
             server.starttls(context=ctx)
             server.login(self.login_email, self.password)
             server.send_message(msg)
@@ -79,7 +137,7 @@ class GmailClient:
         replies = {}
         ctx = ssl.create_default_context()
 
-        with imaplib.IMAP4_SSL(IMAP_HOST, IMAP_PORT, ssl_context=ctx) as imap:
+        with imaplib.IMAP4_SSL(self.imap_host, self.imap_port, ssl_context=ctx) as imap:
             imap.login(self.login_email, self.password)
             imap.select("INBOX")
 
@@ -136,7 +194,7 @@ class GmailClient:
         results = []
         ctx = ssl.create_default_context()
 
-        with imaplib.IMAP4_SSL(IMAP_HOST, IMAP_PORT, ssl_context=ctx) as imap:
+        with imaplib.IMAP4_SSL(self.imap_host, self.imap_port, ssl_context=ctx) as imap:
             imap.login(self.login_email, self.password)
             imap.select("INBOX")
 
@@ -175,11 +233,11 @@ class GmailClient:
         # Test SMTP
         try:
             ctx = ssl.create_default_context()
-            with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+            with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
                 server.starttls(context=ctx)
                 server.login(self.login_email, self.password)
             from_info = f" (sending as {self.from_email})" if self.from_email != self.login_email else ""
-            print(f"  ✅ SMTP: connected as {self.login_email}{from_info}")
+            print(f"  ✅ SMTP: connected to {self.smtp_host} as {self.login_email}{from_info}")
         except Exception as e:
             errors.append(f"SMTP: {e}")
             print(f"  ❌ SMTP: {e}")
@@ -187,7 +245,7 @@ class GmailClient:
         # Test IMAP
         try:
             ctx = ssl.create_default_context()
-            with imaplib.IMAP4_SSL(IMAP_HOST, IMAP_PORT, ssl_context=ctx) as imap:
+            with imaplib.IMAP4_SSL(self.imap_host, self.imap_port, ssl_context=ctx) as imap:
                 imap.login(self.login_email, self.password)
                 imap.select("INBOX")
                 _, msgs = imap.search(None, "ALL")
