@@ -237,39 +237,46 @@ Each email:
 - **Dry run** — always preview before sending
 - **Campaign state** — saved to `outreach_state.json`, survives restarts
 
-### Step 11: Negotiate with responders
+### Step 11: Negotiate autonomously
 
-When a creator replies and moves to NEGOTIATE stage, follow the **Negotiation Playbook** (`references/negotiation_playbook.md`). Summary:
+FameClaw negotiates with creators automatically. The agent only asks the brand owner for info it doesn't have.
 
-**Phase 1 — Discovery (don't pitch yet):**
-Ask the creator:
-1. Audience demographics (top countries, age/gender breakdown)
-2. Rates per post/video + volume discounts
-3. Past brand collaboration examples
+**First-time setup — ask brand owner once:**
+```bash
+python3 scripts/negotiate.py set-config --config outreach.json --key budget_min --value 1000
+python3 scripts/negotiate.py set-config --config outreach.json --key budget_max --value 3000
+python3 scripts/negotiate.py set-config --config outreach.json --key negotiation_style --value value-focused
+# Styles: friendly (meet their price) / value-focused (counter, anchor low) / budget-strict (hard cap)
+```
 
-Ask the brand owner (user):
-1. Budget range (max and ideal per creator)
-2. Negotiation style: **Friendly** (meet their price) / **Value-focused** (counter, anchor low) / **Budget-strict** (hard cap, walk away)
-3. Deal-breakers (geography, competing products, minimum subs)
-4. Payment terms preference
+If these aren't set when a negotiation runs, `negotiate.py` will print what's missing — ask the brand owner and set it.
 
-**Phase 2 — Evaluate:**
-- 🔴 Deprioritize if: creator sells competing products, audience is wrong geography, no past brand work + premium rates
-- 🟢 Push harder if: audience matches, proven integration format, quick responses, rates near budget
+**Running negotiations:**
+```bash
+# Check replies + auto-respond (dry run first)
+python3 scripts/negotiate.py check --config outreach.json --dry-run
+python3 scripts/negotiate.py check --config outreach.json
 
-**Phase 3 — Counter-offer:**
-- Anchor at 60-70% of their ask, frame as "first of many"
-- Propose creative structure (3 × short integrations vs 1 dedicated)
-- Bundle channels if they have YouTube + newsletter + Discord
-- 50/50 payment: half upfront, half after delivery (before publishing)
+# Dashboard
+python3 scripts/negotiate.py status --config outreach.json
+```
 
-**Phase 4 — Follow-up cadence:**
-- Day 0: Counter-offer → Day 3: Gentle bump → Day 7: "Still interested?" → Day 14: Respectful close
-- Max 3 follow-ups per round. If ghosted → STALE. Re-engage in 3-6 months.
+**What it does automatically:**
+1. Reads every reply via IMAP
+2. Classifies it: INTERESTED / PRICED / REDIRECT / DECLINED
+3. INTERESTED → sends discovery questions (demographics, rates, past work)
+4. PRICED → extracts their price, counters based on budget + style
+5. REDIRECT → pivots to their preferred format, asks same questions
+6. DECLINED → respects it, marks dead, re-engages in 3-6 months
+7. No reply in 3 days → auto follow-up (max 3, then STALE)
+8. Price too high → proposes alternatives (shorter format, affiliate, bundle)
 
-**Phase 5 — Close:**
-- Recap deal in writing, get explicit "confirmed" reply
-- Send first payment, set delivery deadline, request draft preview before publishing
+**When it notifies the brand owner:**
+- Missing config (budget, style) — asks once, stores forever
+- Deal closed → "Leo agreed to 2 videos for $2K"
+- Deal dead → "Leo declined. Parked for re-engagement."
+
+**Full playbook:** `references/negotiation_playbook.md`
 
 ### Automate with cron
 Set up follow-ups and reply checking on a schedule:
