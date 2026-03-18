@@ -24,11 +24,14 @@ case "${1:-help}" in
     echo "  3. Copy the 16-character password"
     echo ""
 
-    printf "Gmail address: "
+    printf "Gmail login (the account you sign in with): "
     read -r EMAIL
     printf "App password: "
     read -rs PASSWORD
     echo ""
+    printf "Send-as email (alias, or Enter to use login): "
+    read -r FROM_EMAIL
+    FROM_EMAIL="${FROM_EMAIL:-$EMAIL}"
     printf "Display name (e.g. 'Alex from MyBrand'): "
     read -r DISPLAY_NAME
 
@@ -39,6 +42,7 @@ case "${1:-help}" in
 {
   "email": "$EMAIL",
   "app_password": "$PASSWORD",
+  "from_email": "$FROM_EMAIL",
   "display_name": "$DISPLAY_NAME"
 }
 EOF

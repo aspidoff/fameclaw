@@ -15,9 +15,28 @@ For new users, always run the onboarding flow before prospecting. This is a mult
 Ask the user for:
 1. **Brand name**
 2. **Website URL**
-3. **Connect Gmail** — check with `bash scripts/gmail_auth.sh status`. If not configured, run `bash scripts/gmail_auth.sh setup` (interactive — prompts for email, app password, display name).
+3. **Connect Gmail** — collect these details:
+   - **Gmail login** — the account they authenticate with (e.g. admin@company.com)
+   - **App password** — from myaccount.google.com/apppasswords
+   - **Send-as email** (optional) — if they want to send from an alias (e.g. daniel@company.com). Google Workspace accounts often have aliases configured in Gmail → Settings → Accounts → "Send mail as". If they don't have one, the login email is used.
+   - **Display name** — how they appear in emails (e.g. "Daniel from Fameswap")
 
-Keep it casual: "What's your brand name and website? And have you connected your Gmail yet?"
+Store credentials:
+```bash
+# ~/.config/fameclaw/gmail.json
+{
+  "email": "admin@company.com",
+  "app_password": "xxxx xxxx xxxx xxxx",
+  "from_email": "daniel@company.com",
+  "display_name": "Daniel from Fameswap"
+}
+```
+Save to `~/.config/fameclaw/gmail.json` with mode 600. Then test:
+```bash
+python3 scripts/gmail.py test
+```
+
+Keep it casual: "What's your brand name and website? And let's connect your Gmail — what email do you send outreach from?"
 
 ### Step 2: Scan the site
 ```bash

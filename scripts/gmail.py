@@ -35,14 +35,15 @@ class GmailClient:
     def __init__(self, creds_path):
         with open(creds_path) as f:
             creds = json.load(f)
-        self.email_addr = creds["email"]
+        self.login_email = creds["email"]  # used for SMTP/IMAP auth
+        self.from_email = creds.get("from_email", creds["email"])  # alias for From header
         self.password = creds["app_password"].replace(" ", "")
         self.display_name = creds.get("display_name", "")
 
     def _from_addr(self):
         if self.display_name:
-            return f"{self.display_name} <{self.email_addr}>"
-        return self.email_addr
+            return f"{self.display_name} <{self.from_email}>"
+        return self.from_email
 
     def send(self, to, subject, body, html=False, reply_to_msg_id=None, thread_subject=None):
         """Send an email. Returns message_id on success."""
@@ -56,7 +57,7 @@ class GmailClient:
         msg["To"] = to
         msg["Subject"] = subject
         msg["Date"] = email.utils.formatdate(localtime=True)
-        msg["Message-ID"] = email.utils.make_msgid(domain=self.email_addr.split("@")[1])
+        msg["Message-ID"] = email.utils.make_msgid(domain=self.from_email.split("@")[1])
 
         # Threading — set In-Reply-To and References for follow-ups
         if reply_to_msg_id:
@@ -66,7 +67,7 @@ class GmailClient:
         ctx = ssl.create_default_context()
         with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
             server.starttls(context=ctx)
-            server.login(self.email_addr, self.password)
+            server.login(self.login_email, self.password)
             server.send_message(msg)
 
         return msg["Message-ID"]
@@ -79,7 +80,7 @@ class GmailClient:
         ctx = ssl.create_default_context()
 
         with imaplib.IMAP4_SSL(IMAP_HOST, IMAP_PORT, ssl_context=ctx) as imap:
-            imap.login(self.email_addr, self.password)
+            imap.login(self.login_email, self.password)
             imap.select("INBOX")
 
             for sender_email in sent_emails:
@@ -136,7 +137,7 @@ class GmailClient:
         ctx = ssl.create_default_context()
 
         with imaplib.IMAP4_SSL(IMAP_HOST, IMAP_PORT, ssl_context=ctx) as imap:
-            imap.login(self.email_addr, self.password)
+            imap.login(self.login_email, self.password)
             imap.select("INBOX")
 
             _, msg_nums = imap.search(None, query)
@@ -176,8 +177,9 @@ class GmailClient:
             ctx = ssl.create_default_context()
             with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
                 server.starttls(context=ctx)
-                server.login(self.email_addr, self.password)
-            print(f"  ✅ SMTP: connected as {self.email_addr}")
+                server.login(self.login_email, self.password)
+            from_info = f" (sending as {self.from_email})" if self.from_email != self.login_email else ""
+            print(f"  ✅ SMTP: connected as {self.login_email}{from_info}")
         except Exception as e:
             errors.append(f"SMTP: {e}")
             print(f"  ❌ SMTP: {e}")
@@ -186,7 +188,7 @@ class GmailClient:
         try:
             ctx = ssl.create_default_context()
             with imaplib.IMAP4_SSL(IMAP_HOST, IMAP_PORT, ssl_context=ctx) as imap:
-                imap.login(self.email_addr, self.password)
+                imap.login(self.login_email, self.password)
                 imap.select("INBOX")
                 _, msgs = imap.search(None, "ALL")
                 count = len(msgs[0].split()) if msgs[0] else 0
