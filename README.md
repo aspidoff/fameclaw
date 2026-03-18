@@ -18,6 +18,7 @@
 6. **Email** the best matches — personalized, mentions their actual videos
 7. **Follow up** automatically — day 3 and day 8 if no reply
 8. **Negotiate** autonomously — reads replies, counters, closes deals
+9. **Agent Mail** — persistent inbox monitoring that handles the entire pipeline hands-free
 
 ## Privacy
 
@@ -129,6 +130,20 @@ Three auto-generated emails per creator:
 
 All emails stop automatically when the creator replies.
 
+### Agent Mail — hands-free mode
+```bash
+# Single check cycle
+python3 scripts/agent_mail.py check --config outreach.json
+
+# Persistent watch (checks every 5 min)
+python3 scripts/agent_mail.py watch --config outreach.json --interval 300
+
+# Status dashboard
+python3 scripts/agent_mail.py status --config outreach.json
+```
+
+Agent Mail monitors your inbox, routes emails to the right handler, sends follow-ups, negotiates with creators, and notifies you only when a deal closes or needs your input. One command runs the entire pipeline.
+
 ## Scripts
 
 | Script | Purpose |
@@ -144,6 +159,8 @@ All emails stop automatically when the creator replies.
 | `gmail.py` | Gmail client — SMTP send + IMAP reply tracking |
 | `outreach.sh` | Simple one-shot email sender (legacy, uses gws CLI) |
 | `get_videos.sh` | Fetch recent video titles for personalization |
+| `negotiate.py` | Autonomous negotiation engine (classify, counter, close) |
+| `agent_mail.py` | Persistent inbox monitor — runs the entire pipeline hands-free |
 
 ## Config
 
