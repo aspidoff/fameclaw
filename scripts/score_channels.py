@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Pocketsnap Inc. Licensed under the FameClaw Commercial License.
+# Free for personal use. Commercial use requires a license. See LICENSE-COMMERCIAL.
 """FameClaw Audience Matcher — Score scraped channels against a brand's audience profile.
 
 Reads a CSV of scraped channels + an audience profile, outputs a scored/ranked CSV
