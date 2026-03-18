@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2026 Pocketsnap Inc. Licensed under the FameClaw Commercial License.
+# Copyright (c) 2026 Pocketsnap LLC. Licensed under the FameClaw Commercial License.
 # Free for personal use. Commercial use requires a license. See LICENSE-COMMERCIAL.
 """FameClaw Negotiate Engine — Autonomous creator negotiation.
 
