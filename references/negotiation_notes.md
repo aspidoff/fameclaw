@@ -1,25 +1,25 @@
-# Negotiation Playbook — Learned from Daniel × Leo (howtoai.pro)
+# Negotiation Case Study — Real Outreach (Anonymized)
 
 ## Timeline (17 emails over 7+ months)
 
 | Date | Who | Move |
 |------|-----|------|
-| Apr 3 | Daniel | **Cold outreach** — short, professional. "We looked through your videos... Are you open to paid video collaborations or integrations?" |
-| Apr 5 | Leo | **Redirect** — "I don't do YouTube partnerships, only newsletter promos." Offers newsletter (35K subs) instead. |
-| Apr 5 | Daniel | **Pivot accepted** — "Sure, we'd be interested in newsletter. Perhaps video later." Asks 3 smart questions (audience source, costs, bundle deal). |
-| Apr 6 | Leo | **Reveals pricing** — $300/newsletter, $2-3K/video integration. Offers bulk discount. |
-| Apr 10 | Daniel | **Counter-propose structure** — asks for 3 × 60-90s mid-roll integrations across videos for $3K (not 1 dedicated video). Also asks about month-long newsletter bundle + Discord. |
-| Apr 12 | Leo | **Pushback** — "I make $50K selling my own accounts in 10 videos. Hard to justify $3K for 3 integrations." Implies he needs more. |
-| Apr 24 | Daniel | **Apologize for delay** — keeps thread warm without conceding. |
-| Apr 29 | Daniel | **Reframe + anchor lower** — compliments the $50K, shows he listened. Offers $2K for 1st video as "first of many." Proposes 50/50 payment split. Defers newsletter to later. |
-| May 4 | Daniel | **Follow-up #1** — gentle bump. |
-| May 8 | Daniel | **Follow-up #2** — "Are you still available?" |
-| May 10 | Leo | **Rejects $2K** — "Not within my scope." Tells Daniel to come back with better offer. |
-| May 10 | Daniel | **Quick bump to $3K** — no drama, just meets the price. |
-| May 15 | Leo | **Rejects $3K too** — "More profitable to sell my own accounts." Wants "significantly" more. |
-| May 22 | Daniel | **Call out inconsistency** — screenshots Leo's own $2-3K quote. Asks him to name his price. |
-| May 22 | Leo | **Acknowledges confusion** — admits he was inconsistent. Still won't do $3K. Says his own products are more profitable. |
-| Nov 11 | Daniel | **Re-engage 6 months later** — fresh approach, keeps it light. |
+| Week 1 | Brand Rep | **Cold outreach** — short, professional. "We looked through your videos... Are you open to paid video collaborations or integrations?" |
+| Week 1 | Creator | **Redirect** — "I don't do YouTube partnerships, only newsletter promos." Offers newsletter (35K subs) instead. |
+| Week 1 | Brand Rep | **Pivot accepted** — "Sure, we'd be interested in newsletter. Perhaps video later." Asks 3 smart questions (audience source, costs, bundle deal). |
+| Week 1 | Creator | **Reveals pricing** — $300/newsletter, $2-3K/video integration. Offers bulk discount. |
+| Week 2 | Brand Rep | **Counter-propose structure** — asks for 3 × 60-90s mid-roll integrations across videos for $3K (not 1 dedicated video). Also asks about month-long newsletter bundle + Discord. |
+| Week 2 | Creator | **Pushback** — "I make $50K selling my own products in 10 videos. Hard to justify $3K for 3 integrations." Implies he needs more. |
+| Week 3 | Brand Rep | **Apologize for delay** — keeps thread warm without conceding. |
+| Week 4 | Brand Rep | **Reframe + anchor lower** — compliments the $50K, shows he listened. Offers $2K for 1st video as "first of many." Proposes 50/50 payment split. Defers newsletter to later. |
+| Week 5 | Brand Rep | **Follow-up #1** — gentle bump. |
+| Week 5 | Brand Rep | **Follow-up #2** — "Are you still available?" |
+| Week 6 | Creator | **Rejects $2K** — "Not within my scope." Tells brand to come back with better offer. |
+| Week 6 | Brand Rep | **Quick bump to $3K** — no drama, just meets the price. |
+| Week 7 | Creator | **Rejects $3K too** — "More profitable to sell my own products." Wants "significantly" more. |
+| Week 8 | Brand Rep | **Call out inconsistency** — screenshots creator's own $2-3K quote. Asks him to name his price. |
+| Week 8 | Creator | **Acknowledges confusion** — admits he was inconsistent. Still won't do $3K. Says his own products are more profitable. |
+| Month 7 | Brand Rep | **Re-engage 6 months later** — fresh approach, keeps it light. |
 
 ## Negotiation Tactics Used
 
@@ -28,14 +28,14 @@
 - Lets the creator respond with THEIR preferred format.
 
 ### 2. Pivot gracefully
-- Creator said no to YouTube → Daniel immediately said "sure, let's do newsletter instead"
+- Creator said no to YouTube → brand rep immediately said "sure, let's do newsletter instead"
 - Never fought the rejection, just redirected the conversation.
 
 ### 3. Ask smart questions early
 - Audience source breakdown (YouTube vs Twitter)
 - Pricing and what's included
 - Bundle/volume possibilities
-- This positions Daniel as a serious buyer, not a cold email spammer.
+- This positions the brand as a serious buyer, not a cold email spammer.
 
 ### 4. Propose creative structure
 - Instead of 1 big video ($3K), proposed 3 × short integrations
@@ -51,12 +51,12 @@
 - Reduces creator risk, shows trust, but protects the brand too.
 
 ### 7. Persistent but not pushy
-- 3 follow-ups over 2 weeks when Leo went quiet
+- 3 follow-ups over 2 weeks when creator went quiet
 - Each shorter than the last
 - Never aggressive, just "checking in"
 
 ### 8. Call out inconsistencies politely
-- Screenshotted Leo's own $2-3K quote when he later said $3K wasn't enough
+- Screenshotted creator's own $2-3K quote when he later said $3K wasn't enough
 - Didn't attack, just said "I was going off your earlier number"
 
 ### 9. Always ask for THEIR number
@@ -68,7 +68,7 @@
 - Doesn't reference the old negotiation drama
 
 ## What Didn't Work
-- Creator had a **competing product** (selling his own accounts) — made sponsorship economics unfavorable for him
+- Creator had a **competing product** (selling similar products through their channel) — made sponsorship economics unfavorable
 - $3K/video is standard for ~100K sub channels, but if the creator makes $5K/video selling their own stuff, no integration fee competes
 - **Lesson:** Check if creator sells competing products before investing time in negotiation
 
