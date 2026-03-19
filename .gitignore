@@ -19,3 +19,9 @@ __pycache__/
 gmail_creds.json
 *_creds.json
 *_state.json
+
+# CLI state/build
+cli/.venv/
+cli/*.egg-info/
+cli/fameclaw/__pycache__/
+cli/tests/__pycache__/
