@@ -1,390 +1,220 @@
 """
-Ledger management - records of all sent messages and campaign activity.
+All outreach state in one place: send history, suppression, warm-up, bounces.
+Single JSON file, single source of truth.
 """
 
 from datetime import datetime, timedelta
-from typing import Optional
-
 from .state import StateManager
-from .models import Ledger, LedgerEntry
-from .validation import normalize_email
+
+STATE_FILE = "outreach.json"
+
+# Warm-up stages: (max_day, daily_cap)
+WARMUP_STAGES = [(14, 15), (28, 30), (56, 50), (None, 100)]
 
 
-class LedgerManager:
-    """Manage the outreach ledger (all sent messages)."""
+def _now() -> str:
+    return datetime.utcnow().isoformat() + "Z"
 
-    LEDGER_FILE = "ledger.json"
+
+def _today() -> str:
+    return datetime.utcnow().date().isoformat()
+
+
+class Ledger:
+    """All outreach state: sends, suppression, warm-up, bounces."""
 
     def __init__(self, state_dir: str = "~/.openclaw/outreach"):
-        """Initialize ledger manager."""
-        self.state_dir = state_dir
-        self.state_manager = StateManager(state_dir)
+        self.sm = StateManager(state_dir)
 
-    def load(self) -> Ledger:
-        """Load ledger from state."""
-        ledger_data = self.state_manager.read(self.LEDGER_FILE)
+    def _load(self) -> dict:
+        data = self.sm.read(STATE_FILE)
+        data.setdefault("sends", [])
+        data.setdefault("suppressed", {})
+        data.setdefault("domains", {})
+        data.setdefault("config", {
+            "cooldown_days": 30,
+            "default_from": "lacie@souls.zip",
+            "provider": "agentmail",
+            "smtp_host": "",
+            "smtp_port": 587,
+            "smtp_user": "",
+            "smtp_pass_env": "",
+        })
+        return data
 
-        if not ledger_data:
-            return Ledger(version=1, entries=[])
+    def _save(self, data: dict) -> None:
+        self.sm.write(STATE_FILE, data)
 
-        entries = [
-            LedgerEntry(
-                campaign_id=e["campaign_id"],
-                recipient_email=normalize_email(e["recipient_email"]),
-                message_id=e["message_id"],
-                sent_at=e["sent_at"],
-                status=e["status"],
-                bounce_type=e.get("bounce_type"),
-                error_message=e.get("error_message"),
-            )
-            for e in ledger_data.get("entries", [])
-        ]
+    # ── Config ──────────────────────────────────────────────
 
-        return Ledger(version=ledger_data.get("version", 1), entries=entries)
+    def get_config(self) -> dict:
+        return self._load()["config"]
 
-    def save(self, ledger: Ledger) -> None:
-        """Save ledger to state."""
-        ledger_data = {
-            "version": ledger.version,
-            "entries": [
-                {
-                    "campaign_id": e.campaign_id,
-                    "recipient_email": e.recipient_email,
-                    "message_id": e.message_id,
-                    "sent_at": e.sent_at,
-                    "status": e.status,
-                    "bounce_type": e.bounce_type,
-                    "error_message": e.error_message,
-                }
-                for e in ledger.entries
-            ],
-        }
-        self.state_manager.write(self.LEDGER_FILE, ledger_data)
+    def set_config(self, key: str, value) -> None:
+        data = self._load()
+        # Type coercion
+        if key in ("cooldown_days", "smtp_port"):
+            value = int(value)
+        data["config"][key] = value
+        self._save(data)
 
-    def add_entry(
-        self,
-        campaign_id=None,
-        recipient_email: Optional[str] = None,
-        message_id: Optional[str] = None,
-        status: str = "sending",
-        bounce_type: Optional[str] = None,
-        error_message: Optional[str] = None,
-    ) -> LedgerEntry:
-        """
-        Add entry to ledger.
+    # ── Sends ───────────────────────────────────────────────
 
-        Can be called with:
-        1. A LedgerEntry object: add_entry(entry)
-        2. Individual parameters: add_entry(campaign_id, recipient_email, message_id, ...)
+    def record_send(self, to: str, tag: str, message_id: str = "", status: str = "sent") -> None:
+        data = self._load()
+        data["sends"].append({
+            "to": to.lower().strip(),
+            "tag": tag,
+            "message_id": message_id,
+            "status": status,
+            "sent_at": _now(),
+        })
+        self._save(data)
 
-        Args:
-            campaign_id: Campaign ID or LedgerEntry object
-            recipient_email: Recipient email (if not using LedgerEntry object)
-            message_id: AgentMail message ID
-            status: Message status
-            bounce_type: Type of bounce (hard/soft) if bounced
-            error_message: Error message if failed
+    def is_duped(self, to: str, tag: str) -> bool:
+        """Already sent to this person in this batch?"""
+        to = to.lower().strip()
+        data = self._load()
+        return any(
+            s["to"] == to and s["tag"] == tag and s["status"] in ("sent", "sending")
+            for s in data["sends"]
+        )
 
-        Returns:
-            Created LedgerEntry
-        """
-        ledger = self.load()
+    def recently_contacted(self, to: str, days: int = None) -> list[str]:
+        """Tags that contacted this person within cooldown window."""
+        to = to.lower().strip()
+        data = self._load()
+        if days is None:
+            days = data["config"].get("cooldown_days", 30)
+        cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat() + "Z"
+        return list({
+            s["tag"] for s in data["sends"]
+            if s["to"] == to and s["sent_at"] >= cutoff and s["status"] in ("sent", "sending")
+        })
 
-        # Handle both LedgerEntry object and individual parameters
-        if isinstance(campaign_id, LedgerEntry):
-            entry = campaign_id
-            entry.recipient_email = normalize_email(entry.recipient_email)
-        else:
-            recipient_email = normalize_email(recipient_email)
-            sent_at = datetime.utcnow().isoformat() + "Z"
+    def history(self, to: str) -> list[dict]:
+        to = to.lower().strip()
+        data = self._load()
+        return [s for s in data["sends"] if s["to"] == to]
 
-            entry = LedgerEntry(
-                campaign_id=campaign_id,
-                recipient_email=recipient_email,
-                message_id=message_id,
-                sent_at=sent_at,
-                status=status,
-                bounce_type=bounce_type,
-                error_message=error_message,
-            )
+    def sends_today(self) -> int:
+        today = _today()
+        data = self._load()
+        return sum(1 for s in data["sends"] if s["sent_at"].startswith(today) and s["status"] == "sent")
 
-        ledger.entries.append(entry)
-        self.save(ledger)
-        return entry
+    def total_sends(self) -> int:
+        data = self._load()
+        return len(data["sends"])
 
-    def update_entry_status(
-        self,
-        message_id: str,
-        status: str,
-        bounce_type: Optional[str] = None,
-        error_message: Optional[str] = None,
-    ) -> Optional[LedgerEntry]:
-        """
-        Update entry status by message ID.
+    # ── Suppression ─────────────────────────────────────────
 
-        Args:
-            message_id: AgentMail message ID
-            status: New status
-            bounce_type: Type of bounce if applicable
-            error_message: Error message if applicable
+    def suppress(self, email: str, reason: str = "manual") -> None:
+        email = email.lower().strip()
+        data = self._load()
+        data["suppressed"][email] = {"reason": reason, "added_at": _now()}
+        self._save(data)
 
-        Returns:
-            Updated entry or None if not found
-        """
-        ledger = self.load()
-
-        for entry in ledger.entries:
-            if entry.message_id == message_id:
-                entry.status = status
-                if bounce_type is not None:
-                    entry.bounce_type = bounce_type
-                if error_message is not None:
-                    entry.error_message = error_message
-                self.save(ledger)
-                return entry
-
-        return None
-
-    def update_status(
-        self,
-        lookup_value: str,
-        new_status: str,
-        lookup_field: str = "message_id",
-        bounce_type: Optional[str] = None,
-        error_message: Optional[str] = None,
-    ) -> Optional[LedgerEntry]:
-        """
-        Update entry status by flexible field lookup.
-
-        Args:
-            lookup_value: Value to search for
-            new_status: New status
-            lookup_field: Field to search by (message_id, campaign_id, recipient_email)
-            bounce_type: Type of bounce if applicable
-            error_message: Error message if applicable
-
-        Returns:
-            Updated entry or None if not found
-        """
-        ledger = self.load()
-        field_map = {
-            "message_id": "message_id",
-            "campaign_id": "campaign_id",
-            "recipient_email": "recipient_email",
-        }
-
-        if lookup_field not in field_map:
-            raise ValueError(f"Unknown lookup field: {lookup_field}")
-
-        for entry in ledger.entries:
-            if getattr(entry, field_map[lookup_field]) == lookup_value:
-                entry.status = new_status
-                if bounce_type is not None:
-                    entry.bounce_type = bounce_type
-                if error_message is not None:
-                    entry.error_message = error_message
-                self.save(ledger)
-                return entry
-
-        return None
-
-    def get_by_message_id(self, message_id: str) -> Optional[LedgerEntry]:
-        """Get ledger entry by message ID."""
-        ledger = self.load()
-        for entry in ledger.entries:
-            if entry.message_id == message_id:
-                return entry
-        return None
-
-    def get_by_campaign(self, campaign_id: str) -> list[LedgerEntry]:
-        """Get all ledger entries for a campaign."""
-        ledger = self.load()
-        return [e for e in ledger.entries if e.campaign_id == campaign_id]
-
-    def get_by_recipient(self, recipient_email: str) -> list[LedgerEntry]:
-        """Get all ledger entries for a recipient."""
-        ledger = self.load()
-        recipient_email = normalize_email(recipient_email)
-        return [
-            e for e in ledger.entries if e.recipient_email == recipient_email
-        ]
-
-    def find_by_message_id(self, message_id: str) -> Optional[LedgerEntry]:
-        """Alias for get_by_message_id."""
-        return self.get_by_message_id(message_id)
-
-    def find_by_email(self, recipient_email: str) -> list[LedgerEntry]:
-        """Alias for get_by_recipient."""
-        return self.get_by_recipient(recipient_email)
-
-    def find_by_campaign(self, campaign_id: str) -> list[LedgerEntry]:
-        """Alias for get_by_campaign."""
-        return self.get_by_campaign(campaign_id)
-
-    def find_by_status(self, status: str) -> list[LedgerEntry]:
-        """Get all ledger entries with a specific status."""
-        ledger = self.load()
-        return [e for e in ledger.entries if e.status == status]
-
-    def campaign_stats(self, campaign_id: str) -> dict:
-        """Get statistics for a campaign."""
-        entries = self.find_by_campaign(campaign_id)
-        
-        stats = {
-            "total_sent": len(entries),
-            "total_bounced": len([e for e in entries if "bounce" in e.status.lower()]),
-            "total_opened": len([e for e in entries if e.status == "opened"]),
-            "total_clicked": len([e for e in entries if e.status == "clicked"]),
-            "total_replied": len([e for e in entries if e.status == "replied"]),
-        }
-        
-        return stats
-
-    def get_recent_campaigns_for_recipient(
-        self, recipient_email: str, days: int = 30
-    ) -> list[str]:
-        """
-        Get campaigns sent to a recipient in the last N days (for cooldown check).
-
-        Args:
-            recipient_email: Recipient email
-            days: Look back this many days
-
-        Returns:
-            List of campaign IDs (unique)
-        """
-        recipient_email = normalize_email(recipient_email)
-        cutoff = datetime.utcnow() - timedelta(days=days)
-        cutoff_iso = cutoff.isoformat() + "Z"
-
-        ledger = self.load()
-        campaigns = set()
-
-        for entry in ledger.entries:
-            if (
-                entry.recipient_email == recipient_email
-                and entry.sent_at >= cutoff_iso
-            ):
-                campaigns.add(entry.campaign_id)
-
-        return sorted(list(campaigns))
-
-    def check_dedup(self, campaign_id: str, recipient_email: str) -> bool:
-        """
-        Check if recipient is already in this campaign.
-
-        Args:
-            campaign_id: Campaign ID
-            recipient_email: Recipient email
-
-        Returns:
-            True if already sent to this recipient in this campaign
-        """
-        recipient_email = normalize_email(recipient_email)
-        ledger = self.load()
-
-        for entry in ledger.entries:
-            if (
-                entry.campaign_id == campaign_id
-                and entry.recipient_email == recipient_email
-                and entry.status in ("sending", "sent", "opened", "clicked", "replied")
-            ):
-                return True
-
+    def unsuppress(self, email: str) -> bool:
+        email = email.lower().strip()
+        data = self._load()
+        if email in data["suppressed"]:
+            del data["suppressed"][email]
+            self._save(data)
+            return True
         return False
 
-    def is_duplicate(self, entry: LedgerEntry) -> Optional[LedgerEntry]:
-        """
-        Check if entry is a duplicate.
-        
-        Duplicates are detected by:
-        1. Same message_id (exact duplicate)
-        2. Same campaign_id + recipient_email (campaign dedup)
+    def is_suppressed(self, email: str) -> tuple[bool, str]:
+        """Returns (suppressed, reason)."""
+        email = email.lower().strip()
+        data = self._load()
+        entry = data["suppressed"].get(email)
+        if entry:
+            return True, entry["reason"]
+        return False, ""
 
-        Args:
-            entry: Entry to check
+    def suppressed_list(self) -> dict:
+        return self._load()["suppressed"]
 
-        Returns:
-            Existing entry if duplicate found, None otherwise
-        """
-        ledger = self.load()
-        recipient_email = normalize_email(entry.recipient_email)
+    def suppressed_count(self) -> int:
+        return len(self._load()["suppressed"])
 
-        for existing in ledger.entries:
-            # Check by message_id first
-            if existing.message_id == entry.message_id:
-                return existing
-            
-            # Check by campaign + recipient
-            if (
-                existing.campaign_id == entry.campaign_id
-                and normalize_email(existing.recipient_email) == recipient_email
-            ):
-                return existing
+    # ── Domain warm-up + bounce tracking ────────────────────
 
-        return None
+    def _get_domain(self, domain: str) -> dict:
+        data = self._load()
+        if domain not in data["domains"]:
+            data["domains"][domain] = {
+                "first_send": _today(),
+                "sends_today": 0,
+                "sends_today_date": _today(),
+                "total_sends": 0,
+                "hard_bounces": 0,
+                "paused": False,
+                "pause_reason": None,
+            }
+            self._save(data)
+        d = data["domains"][domain]
+        # Reset daily counter if new day
+        if d.get("sends_today_date") != _today():
+            d["sends_today"] = 0
+            d["sends_today_date"] = _today()
+            self._save(data)
+        return d
 
-    def count_sends_today(self) -> int:
-        """Count total sends today (UTC)."""
-        ledger = self.load()
-        today = datetime.utcnow().date().isoformat()
+    def domain_stage(self, domain: str) -> tuple[int, int]:
+        """Returns (stage_number, daily_cap)."""
+        d = self._get_domain(domain)
+        first = datetime.fromisoformat(d["first_send"]).date()
+        days = (datetime.utcnow().date() - first).days
+        for i, (max_day, cap) in enumerate(WARMUP_STAGES, 1):
+            if max_day is None or days <= max_day:
+                return i, cap
+        return 4, 100
 
-        count = 0
-        for entry in ledger.entries:
-            entry_date = entry.sent_at.split("T")[0]
-            if entry_date == today and entry.status in ("sending", "sent", "opened", "clicked", "replied"):
-                count += 1
+    def check_domain_health(self, domain: str) -> tuple[bool, str]:
+        """Returns (ok, reason). ok=False means halt sending."""
+        d = self._get_domain(domain)
+        if d.get("paused"):
+            return False, d.get("pause_reason", "paused")
+        total = d.get("total_sends", 0)
+        hard = d.get("hard_bounces", 0)
+        if total >= 10 and hard / total >= 0.05:
+            return False, f"Hard bounce rate {hard}/{total} ({hard/total:.0%}) >= 5%"
+        return True, ""
 
-        return count
+    def record_domain_send(self, domain: str) -> None:
+        data = self._load()
+        d = data.setdefault("domains", {}).setdefault(domain, {
+            "first_send": _today(), "sends_today": 0, "sends_today_date": _today(),
+            "total_sends": 0, "hard_bounces": 0, "paused": False, "pause_reason": None,
+        })
+        if d.get("sends_today_date") != _today():
+            d["sends_today"] = 0
+            d["sends_today_date"] = _today()
+        d["sends_today"] += 1
+        d["total_sends"] += 1
+        self._save(data)
 
-    def count_sends_in_hour(self) -> int:
-        """Count sends in the last hour."""
-        ledger = self.load()
-        cutoff = datetime.utcnow() - timedelta(hours=1)
-        cutoff_iso = cutoff.isoformat() + "Z"
+    def domain_sends_today(self, domain: str) -> int:
+        d = self._get_domain(domain)
+        return d.get("sends_today", 0)
 
-        count = 0
-        for entry in ledger.entries:
-            if entry.sent_at >= cutoff_iso and entry.status in ("sending", "sent", "opened", "clicked", "replied"):
-                count += 1
-
-        return count
-
-    def get_hard_bounces(self, campaign_id: Optional[str] = None) -> list[LedgerEntry]:
-        """Get all hard bounces, optionally filtered by campaign."""
-        ledger = self.load()
-        bounces = [e for e in ledger.entries if e.bounce_type == "hard"]
-
-        if campaign_id:
-            bounces = [e for e in bounces if e.campaign_id == campaign_id]
-
-        return bounces
-
-    def get_soft_bounces(self, campaign_id: Optional[str] = None) -> list[LedgerEntry]:
-        """Get all soft bounces, optionally filtered by campaign."""
-        ledger = self.load()
-        bounces = [e for e in ledger.entries if e.bounce_type == "soft"]
-
-        if campaign_id:
-            bounces = [e for e in bounces if e.campaign_id == campaign_id]
-
-        return bounces
-
-    def reverse_index_by_email(self) -> dict[str, list[str]]:
-        """
-        Build reverse index: email -> [campaign_ids].
-
-        Returns:
-            Dict mapping email to list of campaign IDs
-        """
-        ledger = self.load()
-        index = {}
-
-        for entry in ledger.entries:
-            email = entry.recipient_email
-            if email not in index:
-                index[email] = []
-            if entry.campaign_id not in index[email]:
-                index[email].append(entry.campaign_id)
-
-        return index
+    def domain_info(self) -> list[dict]:
+        """All domains with stage info."""
+        data = self._load()
+        result = []
+        for domain, d in data.get("domains", {}).items():
+            stage, cap = self.domain_stage(domain)
+            ok, reason = self.check_domain_health(domain)
+            result.append({
+                "domain": domain,
+                "stage": stage,
+                "cap": cap,
+                "today": d.get("sends_today", 0),
+                "total": d.get("total_sends", 0),
+                "bounces": d.get("hard_bounces", 0),
+                "ok": ok,
+                "status": "OK" if ok else reason,
+                "paused": d.get("paused", False),
+            })
+        return result

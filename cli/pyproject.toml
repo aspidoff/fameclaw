@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fameclaw"
-version = "0.1.0"
-description = "Outreach campaign CLI with safety gates and engagement tracking"
+version = "0.2.0"
+description = "Personal outreach with invisible safety nets"
 requires-python = ">=3.11"
 dependencies = [
     "click>=8.0",
@@ -20,9 +20,3 @@ fameclaw = "fameclaw.cli:cli"
 
 [tool.setuptools.packages.find]
 include = ["fameclaw*"]
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=7.0",
-    "pytest-cov>=4.0",
-]

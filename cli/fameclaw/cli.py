@@ -1,10 +1,12 @@
 """
-fameclaw - personal outreach tool with invisible safety nets.
+fameclaw - personal outreach with invisible safety nets.
 """
 
 import json
 import time
 import os
+import smtplib
+from email.mime.text import MIMEText
 from pathlib import Path
 from typing import Optional
 from datetime import datetime
@@ -12,120 +14,82 @@ from datetime import datetime
 import click
 from rich.console import Console
 from rich.table import Table
+from jinja2 import Template
 
-from .config import ConfigManager
-from .suppressor import SuppressionManager
-from .warmup import WarmupManager
-from .bouncer import BounceManager
-from .ledger import LedgerManager
-from .templates import TemplateRenderer
-from .validation import normalize_email, validate_can_spam
-from .exceptions import OutreachError
+from .ledger import Ledger
 
 console = Console()
-
-DEFAULT_STATE_DIR = "~/.openclaw/outreach"
-
-
-def _get_domain(email: str) -> str:
-    return email.split("@")[1] if "@" in email else email
+STATE_DIR = "~/.openclaw/outreach"
 
 
-def _send_one(
-    to: str,
-    name: str,
-    subject: str,
-    body: str,
-    from_inbox: str,
-    tag: str,
-    state_dir: str,
-    dry_run: bool = False,
-    personalization: dict = None,
-) -> tuple[bool, str]:
-    """
-    Send one email through all safety gates.
+def _render(template_str: str, ctx: dict) -> str:
+    return Template(template_str, autoescape=False).render(**ctx)
 
-    Returns (success, message).
-    """
-    to = normalize_email(to)
-    domain = _get_domain(from_inbox)
 
-    suppressor = SuppressionManager(state_dir)
-    ledger = LedgerManager(state_dir)
-    warmup = WarmupManager(state_dir)
-    bouncer = BounceManager(state_dir)
-    config = ConfigManager(state_dir).load()
+def _send_email(to: str, subject: str, body: str, from_addr: str, config: dict) -> str:
+    """Send one email. Returns message_id. Raises on failure."""
+    provider = config.get("provider", "agentmail")
 
-    # Gate: suppression
-    if suppressor.check(to):
-        entry = suppressor.get(to)
-        return False, f"Suppressed ({entry.reason})"
-
-    # Gate: dedup (same tag = same batch, don't re-send)
-    if ledger.check_dedup(tag, to):
-        return False, "Already sent"
-
-    # Gate: cooldown (30 days between outreach to same person)
-    recent = ledger.get_recent_campaigns_for_recipient(to, config.cross_campaign_cooldown_days)
-    if recent:
-        return False, f"Contacted recently ({', '.join(recent)})"
-
-    # Gate: warm-up cap
-    inbox = warmup.get_or_create(domain)
-    today = datetime.utcnow().date().isoformat()
-    if inbox.sends_today_date != today:
-        inbox.sends_today = 0
-        inbox.sends_today_date = today
-    if inbox.sends_today >= inbox.daily_cap_for_stage:
-        return False, f"Daily cap reached ({inbox.daily_cap_for_stage}/day, stage {inbox.stage})"
-
-    # Gate: engagement pause
-    if inbox.paused:
-        return False, f"Warm-up paused: {inbox.pause_reason}"
-
-    # Gate: domain health
-    at_risk, reason = bouncer.domain_at_risk(domain)
-    if at_risk:
-        return False, f"Domain at risk: {reason}"
-
-    if dry_run:
-        return True, "[dry run] Would send"
-
-    # Pre-allocate
-    pre_id = f"pre-{tag}-{to}-{int(time.time() * 1000)}"
-    ledger.add_entry(
-        campaign_id=tag,
-        recipient_email=to,
-        message_id=pre_id,
-        status="sending",
-    )
-
-    # Send via AgentMail
-    try:
+    if provider == "agentmail":
         from agentmail import AgentMail
         client = AgentMail(api_key=os.environ.get("AGENTMAIL_TOKEN"))
         result = client.inboxes.messages.send(
-            inbox_id=from_inbox,
-            to=to,
-            subject=subject,
-            text=body,
+            inbox_id=from_addr, to=to, subject=subject, text=body,
         )
-        msg_id = getattr(result, "message_id", None) or str(result)
+        return getattr(result, "message_id", "") or str(result)
 
-        # Record success
-        ledger.update_entry_status(pre_id, "sent")
-        warmup.increment_sends_today(domain)
-        warmup.increment_stage_sends(domain)
-        bouncer.record_delivery_success(domain)
+    elif provider == "smtp":
+        msg = MIMEText(body)
+        msg["Subject"] = subject
+        msg["From"] = from_addr
+        msg["To"] = to
+        host = config.get("smtp_host", "smtp.gmail.com")
+        port = int(config.get("smtp_port", 587))
+        user = config.get("smtp_user", from_addr)
+        password = os.environ.get(config.get("smtp_pass_env", "SMTP_PASS"), "")
+        with smtplib.SMTP(host, port) as s:
+            s.starttls()
+            s.login(user, password)
+            s.sendmail(from_addr, [to], msg.as_string())
+        return f"smtp-{int(time.time()*1000)}"
 
-        return True, msg_id
-
-    except Exception as e:
-        ledger.update_entry_status(pre_id, "delivery_failed", error_message=str(e))
-        return False, str(e)
+    else:
+        raise ValueError(f"Unknown provider: {provider}. Use 'agentmail' or 'smtp'.")
 
 
-# ── CLI ─────────────────────────────────────────────────────────
+def _check_gates(ledger: Ledger, to: str, tag: str, domain: str) -> Optional[str]:
+    """Check all safety gates. Returns reason string if blocked, None if clear."""
+    to = to.lower().strip()
+
+    # Suppression
+    suppressed, reason = ledger.is_suppressed(to)
+    if suppressed:
+        return f"Suppressed ({reason})"
+
+    # Dedup
+    if ledger.is_duped(to, tag):
+        return "Already sent"
+
+    # Cooldown
+    recent = ledger.recently_contacted(to)
+    if recent:
+        return f"Contacted recently ({', '.join(recent)})"
+
+    # Domain health
+    ok, reason = ledger.check_domain_health(domain)
+    if not ok:
+        return f"Domain issue: {reason}"
+
+    # Warm-up cap
+    stage, cap = ledger.domain_stage(domain)
+    today = ledger.domain_sends_today(domain)
+    if today >= cap:
+        return f"Daily cap ({cap}/day, stage {stage})"
+
+    return None
+
+
+# ── CLI ─────────────────────────────────────────────────────
 
 @click.group()
 def cli():
@@ -134,64 +98,43 @@ def cli():
 
 
 @cli.command()
-@click.option("--state-dir", default=DEFAULT_STATE_DIR, help="State directory")
-def init(state_dir: str):
+def init():
     """Set up fameclaw."""
-    from .state import StateManager
-    sm = StateManager(state_dir)
-    sm._ensure_dir()
-
-    config_mgr = ConfigManager(state_dir)
-    try:
-        config_mgr.load()
-    except Exception:
-        config_mgr.save(config_mgr._get_defaults())
-
+    ledger = Ledger(STATE_DIR)
+    ledger._load()  # Creates default state
     console.print("[green]✓[/green] fameclaw ready")
-    console.print(f"  State: {Path(state_dir).expanduser()}")
 
 
 @cli.command()
 @click.option("--to", help="Recipient email")
 @click.option("--name", default="", help="Recipient name")
-@click.option("--subject", required=True, help="Subject (supports {{name}} etc)")
+@click.option("--subject", required=True, help="Subject (supports {{name}})")
 @click.option("--body", "body_text", default=None, help="Body text inline")
-@click.option("--body-file", default=None, help="Body from file (supports {{name}} etc)")
-@click.option("--from", "from_inbox", default=None, help="From inbox (default: config)")
+@click.option("--body-file", default=None, help="Body from file (supports {{name}})")
+@click.option("--from", "from_inbox", default=None, help="From address")
 @click.option("--list", "list_file", default=None, help="Recipients JSON file")
-@click.option("--tag", default=None, help="Batch tag for dedup (default: auto)")
-@click.option("--spacing", default=30, type=int, help="Seconds between sends (default: 30)")
+@click.option("--tag", default=None, help="Batch tag for dedup (auto if omitted)")
+@click.option("--spacing", default=30, type=int, help="Seconds between sends")
 @click.option("--dry-run", is_flag=True, help="Check gates without sending")
-@click.option("--state-dir", default=DEFAULT_STATE_DIR, help="State directory")
-def send(
-    to: Optional[str],
-    name: str,
-    subject: str,
-    body_text: Optional[str],
-    body_file: Optional[str],
-    from_inbox: Optional[str],
-    list_file: Optional[str],
-    tag: Optional[str],
-    spacing: int,
-    dry_run: bool,
-    state_dir: str,
-):
+def send(to, name, subject, body_text, body_file, from_inbox, list_file, tag, spacing, dry_run):
     """Send personal outreach emails."""
-    # Resolve body
+    ledger = Ledger(STATE_DIR)
+    config = ledger.get_config()
+
+    # Body
     if body_file:
         body_template = Path(body_file).expanduser().read_text()
     elif body_text:
         body_template = body_text
     else:
-        console.print("[red]Error:[/red] Need --body or --body-file")
+        console.print("[red]Need --body or --body-file[/red]")
         raise SystemExit(1)
 
-    # Resolve from
+    # From
     if not from_inbox:
-        config = ConfigManager(state_dir).load()
-        from_inbox = config.default_from_inbox
+        from_inbox = config.get("default_from", "lacie@souls.zip")
 
-    # Resolve recipients
+    # Recipients
     recipients = []
     if list_file:
         with open(Path(list_file).expanduser()) as f:
@@ -199,197 +142,152 @@ def send(
     elif to:
         recipients = [{"email": to, "display_name": name, "personalization": {}}]
     else:
-        console.print("[red]Error:[/red] Need --to or --list")
+        console.print("[red]Need --to or --list[/red]")
         raise SystemExit(1)
 
     # Auto-tag
     if not tag:
         tag = f"outreach-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}"
 
-    # CAN-SPAM check (physical address)
-    config = ConfigManager(state_dir).load()
-    violations = validate_can_spam(body_template, config)
-    if violations:
-        for v in violations:
-            console.print(f"[red]✗[/red] {v}")
-        raise SystemExit(1)
-
-    # Send
+    domain = from_inbox.split("@")[1] if "@" in from_inbox else from_inbox
     sent = 0
-    failed = 0
     total = len(recipients)
 
     for i, r in enumerate(recipients):
-        email = r.get("email", r) if isinstance(r, dict) else r
+        email = (r.get("email", r) if isinstance(r, dict) else r).lower().strip()
         display_name = r.get("display_name", "") if isinstance(r, dict) else ""
         personalization = r.get("personalization", {}) if isinstance(r, dict) else {}
 
-        # Render templates
         ctx = {"name": display_name, "display_name": display_name, "email": email, **personalization}
-        rendered_subject, subj_err = TemplateRenderer._render_content(subject, ctx, email)
-        if subj_err:
-            console.print(f"[red]✗[/red] {email} - template error: {subj_err[0]}")
-            failed += 1
+
+        # Render
+        try:
+            rendered_subject = _render(subject, ctx)
+            rendered_body = _render(body_template, ctx)
+        except Exception as e:
+            console.print(f"[red]✗[/red] {email} - template error: {e}")
             continue
 
-        rendered_body, body_err = TemplateRenderer._render_content(body_template, ctx, email)
-        if body_err:
-            console.print(f"[red]✗[/red] {email} - template error: {body_err[0]}")
-            failed += 1
+        # Gates
+        blocked = _check_gates(ledger, email, tag, domain)
+        if blocked:
+            prefix = f"[{i+1}/{total}] " if total > 1 else ""
+            console.print(f"[red]✗[/red] {prefix}{email} - {blocked}")
             continue
+
+        if dry_run:
+            prefix = f"[{i+1}/{total}] " if total > 1 else ""
+            console.print(f"[dim]○[/dim] {prefix}{email} [dry run]")
+            sent += 1
+            continue
+
+        # Pre-allocate
+        ledger.record_send(email, tag, status="sending")
 
         # Send
-        prefix = f"[{i + 1}/{total}]" if total > 1 else ""
-        success, msg = _send_one(
-            to=email,
-            name=display_name,
-            subject=rendered_subject,
-            body=rendered_body,
-            from_inbox=from_inbox,
-            tag=tag,
-            state_dir=state_dir,
-            dry_run=dry_run,
-            personalization=personalization,
-        )
-
-        if success:
+        try:
+            msg_id = _send_email(email, rendered_subject, rendered_body, from_inbox, config)
+            # Update to sent (re-record overwrites the sending entry conceptually,
+            # but we just append - dedup checks handle it)
+            ledger.record_send(email, tag, message_id=msg_id, status="sent")
+            ledger.record_domain_send(domain)
+            prefix = f"[{i+1}/{total}] " if total > 1 else ""
+            console.print(f"[green]✓[/green] {prefix}{email}")
             sent += 1
-            console.print(f"[green]✓[/green] {prefix} {email}")
-        else:
-            failed += 1
-            console.print(f"[red]✗[/red] {prefix} {email} - {msg}")
+        except Exception as e:
+            console.print(f"[red]✗[/red] {email} - {e}")
 
-        # Spacing between sends
-        if success and not dry_run and i < total - 1:
+        # Spacing
+        if i < total - 1:
             time.sleep(spacing)
 
-    # Summary
     if total > 1:
-        console.print(f"\nDone. Sent: {sent}, Skipped: {failed}")
+        console.print(f"\nDone. Sent: {sent}/{total}")
 
 
 @cli.command()
-@click.option("--state-dir", default=DEFAULT_STATE_DIR)
-def status(state_dir: str):
+def status():
     """Show outreach status."""
-    warmup = WarmupManager(state_dir)
-    bouncer = BounceManager(state_dir)
-    ledger = LedgerManager(state_dir)
-    suppressor = SuppressionManager(state_dir)
+    ledger = Ledger(STATE_DIR)
+    domains = ledger.domain_info()
 
-    # Warm-up
-    inboxes = warmup.list_all()
-    if inboxes:
+    if domains:
         t = Table(title="Domain Health")
         t.add_column("Domain")
         t.add_column("Stage")
         t.add_column("Today")
         t.add_column("Cap")
+        t.add_column("Total")
         t.add_column("Status")
-
-        for inbox in inboxes:
-            at_risk, _ = bouncer.domain_at_risk(inbox.domain)
-            status_str = "[red]AT RISK[/red]" if at_risk else (
-                "[yellow]PAUSED[/yellow]" if inbox.paused else "[green]OK[/green]"
-            )
-            t.add_row(
-                inbox.domain,
-                str(inbox.stage),
-                str(inbox.sends_today),
-                str(inbox.daily_cap_for_stage),
-                status_str,
-            )
+        for d in domains:
+            status_str = "[green]OK[/green]" if d["ok"] else f"[red]{d['status']}[/red]"
+            t.add_row(d["domain"], str(d["stage"]), str(d["today"]), str(d["cap"]), str(d["total"]), status_str)
         console.print(t)
-    else:
-        console.print("[dim]No domains tracked yet.[/dim]")
 
-    # Quick stats
-    total_sent = len(ledger.load().entries)
-    total_suppressed = suppressor.count()
-    console.print(f"\nTotal sent: {total_sent} | Suppressed: {total_suppressed}")
+    console.print(f"\nTotal sent: {ledger.total_sends()} | Suppressed: {ledger.suppressed_count()}")
 
 
 @cli.command()
 @click.argument("email")
-@click.option("--reason", default="manual", help="Reason (manual, explicit_opt_out, hard_bounce)")
-@click.option("--state-dir", default=DEFAULT_STATE_DIR)
-def suppress(email: str, reason: str, state_dir: str):
+@click.option("--reason", default="manual")
+def suppress(email, reason):
     """Add email to suppression list."""
-    suppressor = SuppressionManager(state_dir)
-    email = normalize_email(email)
-    suppressor.add(email=email, reason=reason, added_by="user")
-    console.print(f"[green]✓[/green] {email} suppressed ({reason})")
+    ledger = Ledger(STATE_DIR)
+    ledger.suppress(email, reason)
+    console.print(f"[green]✓[/green] {email.lower().strip()} suppressed ({reason})")
 
 
 @cli.command()
 @click.argument("email")
-@click.option("--state-dir", default=DEFAULT_STATE_DIR)
-def unsuppress(email: str, state_dir: str):
-    """Remove email from suppression list."""
-    suppressor = SuppressionManager(state_dir)
-    email = normalize_email(email)
-    if suppressor.remove(email):
-        console.print(f"[green]✓[/green] {email} unsuppressed")
+def unsuppress(email):
+    """Remove from suppression list."""
+    ledger = Ledger(STATE_DIR)
+    if ledger.unsuppress(email):
+        console.print(f"[green]✓[/green] {email.lower().strip()} unsuppressed")
     else:
         console.print(f"[dim]{email} was not suppressed[/dim]")
 
 
 @cli.command()
-@click.option("--state-dir", default=DEFAULT_STATE_DIR)
-def suppressed(state_dir: str):
+def suppressed():
     """List suppressed emails."""
-    suppressor = SuppressionManager(state_dir)
-    entries = suppressor.list_all()
-
+    ledger = Ledger(STATE_DIR)
+    entries = ledger.suppressed_list()
     if not entries:
         console.print("[dim]No suppressed emails.[/dim]")
         return
-
     t = Table(title=f"Suppressed ({len(entries)})")
     t.add_column("Email")
     t.add_column("Reason")
     t.add_column("Added")
-
-    for e in entries:
-        t.add_row(e.email, e.reason, e.added_at[:10])
-
+    for email, e in sorted(entries.items()):
+        t.add_row(email, e["reason"], e.get("added_at", "")[:10])
     console.print(t)
-
-
-@cli.command()
-@click.option("--key", required=True, help="Config key")
-@click.option("--value", required=True, help="Config value")
-@click.option("--state-dir", default=DEFAULT_STATE_DIR)
-def config(key: str, value: str, state_dir: str):
-    """Set a config value."""
-    try:
-        config_mgr = ConfigManager(state_dir)
-        config_mgr.set_value(key, value)
-        console.print(f"[green]✓[/green] {key} = {value}")
-    except OutreachError as e:
-        console.print(f"[red]Error:[/red] {e}")
-        raise SystemExit(1)
 
 
 @cli.command()
 @click.argument("email")
-@click.option("--state-dir", default=DEFAULT_STATE_DIR)
-def history(email: str, state_dir: str):
+def history(email):
     """Show send history for an email."""
-    ledger = LedgerManager(state_dir)
-    email = normalize_email(email)
-    entries = ledger.get_by_recipient(email)
-
+    ledger = Ledger(STATE_DIR)
+    entries = ledger.history(email)
     if not entries:
         console.print(f"[dim]No history for {email}[/dim]")
         return
-
-    t = Table(title=f"History: {email}")
+    t = Table(title=f"History: {email.lower().strip()}")
     t.add_column("Date")
     t.add_column("Tag")
     t.add_column("Status")
-
     for e in entries:
-        t.add_row(e.sent_at[:10], e.campaign_id, e.status)
-
+        t.add_row(e["sent_at"][:10], e["tag"], e["status"])
     console.print(t)
+
+
+@cli.command()
+@click.option("--key", required=True)
+@click.option("--value", required=True)
+def config(key, value):
+    """Set a config value."""
+    ledger = Ledger(STATE_DIR)
+    ledger.set_config(key, value)
+    console.print(f"[green]✓[/green] {key} = {value}")
