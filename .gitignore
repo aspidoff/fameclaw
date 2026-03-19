@@ -19,3 +19,10 @@ __pycache__/
 gmail_creds.json
 *_creds.json
 *_state.json
+
+# Data files
+*.egg-info/
+audience.json
+config-round*.json
+config.json
+outreach.json
