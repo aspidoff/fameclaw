@@ -1,0 +1,77 @@
+# Functional Source License, Version 1.1, MIT Future License
+
+## Abbreviation
+
+FSL-1.1-MIT
+
+## Notice
+
+Copyright 2026 Pocketsnap LLC dba Shoutcart
+
+## Terms and Conditions
+
+### Licensor ("We")
+
+Pocketsnap LLC dba Shoutcart
+
+### The Software
+
+FameClaw scoring engine (`score_channels.py`) and negotiation engine
+(`negotiate.py`), including all associated documentation and configuration.
+
+### Grant of Rights
+
+Subject to the terms and conditions below, Licensor hereby grants you a
+non-exclusive, worldwide, non-transferable, royalty-free license to use, copy,
+modify, and create derivative works of the Software, subject to the Limitations
+below. You may NOT redistribute the Software or derivative works.
+
+### Limitations
+
+You may NOT use the Software, or any derivative works of the Software, to
+provide a product or service that competes with the Software or any other
+product or service offered by Licensor.
+
+A product or service is considered "competing" if it offers substantially
+similar functionality to the Software — specifically, automated creator/channel
+scoring, audience matching, or automated creator negotiation as part of an
+influencer outreach or marketplace platform.
+
+### Commercial Use Addendum
+
+If you or your organization generates more than $1,000,000 USD in annual gross
+revenue, you must obtain a commercial license from Pocketsnap LLC dba Shoutcart to use the
+Software for any commercial purpose.
+
+Organizations generating $1,000,000 USD or less in annual gross revenue may use
+the Software commercially without a separate license, subject to the
+non-compete Limitation above.
+
+Contact business@shoutcart.com for commercial licensing.
+
+### Change Date
+
+2028-03-18 (two years from initial release)
+
+### Change License
+
+MIT License
+
+On or after the Change Date, the Software is released under the Change License.
+From that point forward, this FSL license no longer applies — the Software is
+fully open source under the MIT License with no restrictions.
+
+### Disclaimer
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+## More Information
+
+For more about the Functional Source License: https://fsl.software
+For commercial licensing: business@shoutcart.com

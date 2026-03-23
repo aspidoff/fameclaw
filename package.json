@@ -1,0 +1,26 @@
+{
+  "name": "fameclaw",
+  "version": "1.0.1",
+  "description": "FameClaw — YouTube Creator Outreach CLI",
+  "bin": {
+    "fameclaw": "bin/fameclaw.js"
+  },
+  "files": [
+    "bin/",
+    "scripts/"
+  ],
+  "scripts": {
+    "prepublishOnly": "chmod +x scripts/*.sh"
+  },
+  "keywords": [
+    "youtube",
+    "outreach",
+    "creator",
+    "influencer",
+    "cli"
+  ],
+  "license": "SEE LICENSE IN LICENSE",
+  "dependencies": {
+    "commander": "^12.1.0"
+  }
+}
