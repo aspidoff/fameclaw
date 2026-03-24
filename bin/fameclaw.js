@@ -243,6 +243,19 @@ negotiate
     python('negotiate.py', ['set-config', '--config', opts.config, '--key', opts.key, '--value', opts.value]);
   });
 
+// ── enrich ──
+program
+  .command('enrich <csv-file>')
+  .description('Enrich a CSV with cross-platform social data (X followers, TikTok stats)')
+  .option('--platforms <platforms>', 'Comma-separated platforms: x,tiktok', 'x,tiktok')
+  .option('--output <file>', 'Output CSV file')
+  .action((csvFile, opts) => {
+    const args = [csvFile];
+    if (opts.output) args.push(opts.output);
+    args.push('--platforms', opts.platforms);
+    bash('enrich_socials.sh', args);
+  });
+
 // ── gmail ──
 const gmail = program
   .command('gmail')

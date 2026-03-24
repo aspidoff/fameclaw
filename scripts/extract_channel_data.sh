@@ -117,6 +117,20 @@ for m in re.finditer(r'youtube\.com/redirect\?[^"]+', yt):
     if qm:
         urls.add(urllib.parse.unquote(qm.group(1)))
 r['external_links'] = ' | '.join(sorted(urls))
+
+# Social handles — scan full HTML for platform URLs
+platforms = {
+    "x": r"(?:twitter\.com|x\.com)/(@?[a-zA-Z0-9_]+)",
+    "tiktok": r"tiktok\.com/@?([a-zA-Z0-9_.]+)",
+    "instagram": r"instagram\.com/([a-zA-Z0-9_.]+)",
+}
+junk_handles = {"share", "intent", "web", "home", "search", "explore", "p", "reel", "about", "privacy", "terms", "login", "signup", "help", "settings", "i", "hashtag"}
+
+for platform, pattern in platforms.items():
+    matches = set(re.findall(pattern, yt, re.I))
+    matches = {m.lstrip("@") for m in matches if len(m) > 1 and m.lower() not in junk_handles}
+    r[f"{platform}_handle"] = sorted(matches)[0] if matches else ""
+
 r['channel_url'] = channel_url
 
 with open(out_file, 'w') as f:
@@ -138,6 +152,9 @@ MAX_VIEWS=$(get_stat max_views)
 SAMPLED=$(get_stat videos_sampled)
 DESC=$(get_stat description)
 EXT_LINKS=$(get_stat external_links)
+X_HANDLE=$(get_stat x_handle)
+TIKTOK_HANDLE=$(get_stat tiktok_handle)
+IG_HANDLE=$(get_stat instagram_handle)
 
 echo "  Name:        $NAME"
 echo "  Handle:      $HANDLE_VAL"
@@ -179,12 +196,12 @@ EMAIL_STR=$(echo "$ALL_EMAILS" | tr '\n' '; ' | sed 's/; $//')
 # --- Write CSV ---
 echo ""
 if [ ! -s "$OUTPUT" ]; then
-  echo "channel_name,handle,subscribers,total_videos,avg_views,median_views,min_views,max_views,videos_sampled,email,description,external_links,channel_url" > "$OUTPUT"
+  echo "channel_name,handle,subscribers,total_videos,avg_views,median_views,min_views,max_views,videos_sampled,email,description,external_links,x_handle,tiktok_handle,instagram_handle,channel_url" > "$OUTPUT"
 fi
 
 csv_escape() { printf '"%s"' "$(echo "$1" | sed 's/"/""/g')"; }
 
-ROW="$(csv_escape "$NAME"),$(csv_escape "$HANDLE_VAL"),$(csv_escape "$SUBS"),$(csv_escape "$TOTAL_VIDS"),$(csv_escape "$AVG_VIEWS"),$(csv_escape "$MEDIAN_VIEWS"),$(csv_escape "$MIN_VIEWS"),$(csv_escape "$MAX_VIEWS"),$(csv_escape "$SAMPLED"),$(csv_escape "$EMAIL_STR"),$(csv_escape "$DESC"),$(csv_escape "$EXT_LINKS"),$(csv_escape "$CHANNEL_URL")"
+ROW="$(csv_escape "$NAME"),$(csv_escape "$HANDLE_VAL"),$(csv_escape "$SUBS"),$(csv_escape "$TOTAL_VIDS"),$(csv_escape "$AVG_VIEWS"),$(csv_escape "$MEDIAN_VIEWS"),$(csv_escape "$MIN_VIEWS"),$(csv_escape "$MAX_VIEWS"),$(csv_escape "$SAMPLED"),$(csv_escape "$EMAIL_STR"),$(csv_escape "$DESC"),$(csv_escape "$EXT_LINKS"),$(csv_escape "$X_HANDLE"),$(csv_escape "$TIKTOK_HANDLE"),$(csv_escape "$IG_HANDLE"),$(csv_escape "$CHANNEL_URL")"
 echo "$ROW" >> "$OUTPUT"
 
 echo "✅ Saved to $OUTPUT"
@@ -193,3 +210,4 @@ echo "=== Summary ==="
 echo "  $NAME ($HANDLE_VAL)"
 echo "  📊 $SUBS subs | $TOTAL_VIDS videos | ~${AVG_VIEWS:-?} avg views"
 echo "  📧 ${EMAIL_STR:-no email found}"
+echo "  🔗 X: ${X_HANDLE:-none} | TikTok: ${TIKTOK_HANDLE:-none} | IG: ${IG_HANDLE:-none}"
