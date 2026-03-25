@@ -45,9 +45,10 @@ program
 program
   .command('prospect')
   .description('Find creators matching queries (YouTube or TikTok)')
-  .option('-p, --platform <platform>', 'Platform: youtube (default), tiktok')
+  .option('-p, --platform <platform>', 'Platform: youtube (default), tiktok, x')
   .option('--queries <queries...>', 'Search queries (YouTube)')
   .option('--hashtags <hashtags...>', 'Hashtags to scrape (TikTok)')
+  .option('--handles <handles...>', 'X handles to extract')
   .option('--target <n>', 'Target number of creators', '100')
   .option('--output <file>', 'Output CSV file')
   .option('--max-subs <n>', 'Max subscriber count (YouTube)', '100000')
@@ -57,6 +58,43 @@ program
   .option('--config <file>', 'Config JSON file (YouTube)')
   .action((opts) => {
     const platform = opts.platform || 'youtube';
+
+    if (platform === 'x') {
+      if (!opts.handles || opts.handles.length === 0) {
+        console.error('Error: --handles is required for X prospecting');
+        process.exit(1);
+      }
+      const output = opts.output || 'x_creators.csv';
+      const handles = opts.handles;
+      let i = 0;
+      function nextHandle() {
+        if (i >= handles.length) {
+          console.log(`\nDone! Extracted ${handles.length} X profiles to ${output}`);
+          return;
+        }
+        const handle = handles[i].replace(/^@/, '');
+        console.log(`\n[${i + 1}/${handles.length}] Extracting @${handle}...`);
+        const proc = spawn('bash', [path.join(SCRIPTS, 'extract_x.sh'), handle, output], {
+          stdio: 'inherit',
+          cwd: process.cwd(),
+        });
+        proc.on('close', (code) => {
+          i++;
+          if (i < handles.length) {
+            // Rate limit: 1.5s between requests
+            setTimeout(nextHandle, 1500);
+          } else {
+            nextHandle();
+          }
+        });
+        proc.on('error', (err) => {
+          console.error(`Failed: ${err.message}`);
+          process.exit(1);
+        });
+      }
+      nextHandle();
+      return;
+    }
 
     if (platform === 'tiktok') {
       if (!opts.hashtags || opts.hashtags.length === 0) {
@@ -108,6 +146,7 @@ program
 // ── Platform detection helper ──
 function detectPlatform(url) {
   if (/tiktok\.com/i.test(url)) return 'tiktok';
+  if (/(?:^|\/\/)(x|twitter)\.com/i.test(url)) return 'x';
   if (/youtube\.com|youtu\.be/i.test(url)) return 'youtube';
   return null;
 }
@@ -127,9 +166,11 @@ program
   .option('--output <file>', 'Output CSV file')
   .action((url, opts) => {
     const platform = resolvePlatform(url, opts.platform);
-    const defaultOutput = platform === 'tiktok' ? 'tiktok_data.csv' : 'output.csv';
+    const defaultOutput = platform === 'tiktok' ? 'tiktok_data.csv' : platform === 'x' ? 'x_data.csv' : 'output.csv';
     const output = opts.output || defaultOutput;
-    if (platform === 'tiktok') {
+    if (platform === 'x') {
+      bash('extract_x.sh', [url, output]);
+    } else if (platform === 'tiktok') {
       bash('extract_tiktok.sh', [url, output]);
     } else {
       bash('extract_channel_data.sh', [url, output]);
@@ -143,7 +184,9 @@ program
   .option('-p, --platform <platform>', 'Platform: youtube, tiktok (auto-detected from URL)')
   .action((url, opts) => {
     const platform = resolvePlatform(url, opts.platform);
-    if (platform === 'tiktok') {
+    if (platform === 'x') {
+      bash('extract_x.sh', [url]);
+    } else if (platform === 'tiktok') {
       bash('extract_tiktok.sh', [url]);
     } else {
       bash('extract_email.sh', [url]);
