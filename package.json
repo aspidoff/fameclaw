@@ -1,6 +1,6 @@
 {
   "name": "fameclaw",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "FameClaw — YouTube Creator Outreach CLI",
   "bin": {
     "fameclaw": "bin/fameclaw.js"
