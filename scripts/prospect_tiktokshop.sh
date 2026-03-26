@@ -177,6 +177,8 @@ creators = defaultdict(lambda: {
     'total_play_count': 0,
     'total_like_count': 0,
     'products': set(),
+    'total_est_gmv_usd': 0.0,
+    'conversion_rates': [],
 })
 
 with open(raw_file, 'r', newline='') as f:
@@ -211,19 +213,38 @@ with open(raw_file, 'r', newline='') as f:
         if product_name:
             c['products'].add(product_name)
 
-# Sort by total play count descending
+        # GMV columns (indices 10, 11, 12)
+        if len(row) > 11:
+            est_gmv = row[11]
+            if est_gmv and est_gmv != 'n/a':
+                try:
+                    c['total_est_gmv_usd'] += float(est_gmv)
+                except ValueError:
+                    pass
+        if len(row) > 12:
+            est_conv = row[12]
+            if est_conv and est_conv != 'n/a':
+                try:
+                    c['conversion_rates'].append(float(est_conv))
+                except ValueError:
+                    pass
+
+# Sort by total_est_gmv_usd descending (highest GMV first)
 sorted_creators = sorted(
     creators.items(),
-    key=lambda x: x[1]['total_play_count'],
+    key=lambda x: x[1]['total_est_gmv_usd'],
     reverse=True
 )[:target]
 
 # Write output
 with open(out_file, 'w', newline='') as f:
     w = csv.writer(f)
-    w.writerow(['author_name', 'author_id', 'total_play_count', 'total_like_count', 'num_products_promoted', 'product_names'])
+    w.writerow(['author_name', 'author_id', 'total_play_count', 'total_like_count', 'num_products_promoted', 'product_names', 'total_est_gmv_usd', 'avg_conversion_rate'])
     for author_id, c in sorted_creators:
         product_list = '; '.join(sorted(c['products']))
+        rates = c['conversion_rates']
+        avg_conv = f"{sum(rates) / len(rates):.8f}" if rates else 'n/a'
+        total_gmv = f"{c['total_est_gmv_usd']:.2f}" if c['total_est_gmv_usd'] > 0 else 'n/a'
         w.writerow([
             c['author_name'],
             author_id,
@@ -231,6 +252,8 @@ with open(out_file, 'w', newline='') as f:
             c['total_like_count'],
             len(c['products']),
             product_list,
+            total_gmv,
+            avg_conv,
         ])
 
 print(f"Unique creators: {len(sorted_creators)}")

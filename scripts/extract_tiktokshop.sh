@@ -87,6 +87,26 @@ def find_deep(obj, key):
             results.extend(find_deep(item, key))
     return results
 
+def try_parse_price(val):
+    """Try to extract a numeric price from various formats."""
+    if val is None:
+        return None
+    s = str(val).strip()
+    if not s or s.lower() in ('', 'n/a', 'none', 'null'):
+        return None
+    # Remove currency symbols and commas
+    s = re.sub(r'[^\d.]', '', s)
+    if not s:
+        return None
+    try:
+        p = float(s)
+        # TikTok often stores prices in cents
+        if p > 10000:
+            p = p / 100.0
+        return p if p > 0 else None
+    except ValueError:
+        return None
+
 def extract_product(obj):
     """Try to extract product info from a dict."""
     global product_info
@@ -95,12 +115,36 @@ def extract_product(obj):
     # Look for product-like objects
     if 'sold_count' in obj or 'soldCount' in obj or 'sales' in obj:
         product_info['sold_count'] = str(obj.get('sold_count', obj.get('soldCount', obj.get('sales', ''))))
-    if 'price' in obj:
-        p = obj['price']
-        if isinstance(p, dict):
-            product_info['price'] = str(p.get('original_price', p.get('originalPrice', p.get('price', ''))))
-        else:
-            product_info['price'] = str(p)
+    # Price extraction — try multiple fields in priority order
+    if not product_info.get('_price_numeric'):
+        # Try product_price_info sub-object first
+        ppi = obj.get('product_price_info', obj.get('productPriceInfo', {}))
+        if isinstance(ppi, dict):
+            for price_key in ['sale_price', 'sale_price_format', 'price', 'original_price']:
+                p = try_parse_price(ppi.get(price_key))
+                if p:
+                    product_info['price'] = f"{p:.2f}"
+                    product_info['_price_numeric'] = p
+                    break
+        # Try direct price fields
+        if not product_info.get('_price_numeric'):
+            for price_key in ['sale_price', 'salePrice', 'price', 'original_price', 'originalPrice']:
+                if price_key in obj:
+                    val = obj[price_key]
+                    if isinstance(val, dict):
+                        for sub_key in ['sale_price', 'price', 'original_price', 'originalPrice']:
+                            p = try_parse_price(val.get(sub_key))
+                            if p:
+                                product_info['price'] = f"{p:.2f}"
+                                product_info['_price_numeric'] = p
+                                break
+                    else:
+                        p = try_parse_price(val)
+                        if p:
+                            product_info['price'] = f"{p:.2f}"
+                            product_info['_price_numeric'] = p
+                    if product_info.get('_price_numeric'):
+                        break
     if 'title' in obj and not product_info.get('name') and len(str(obj.get('title', ''))) > 10:
         product_info['name'] = str(obj['title'])
     if 'name' in obj and not product_info.get('name') and len(str(obj.get('name', ''))) > 10:
@@ -153,12 +197,36 @@ for m in re.finditer(r'<script[^>]*type="application/ld\+json"[^>]*>\s*({.+?})\s
             if ld.get('@type') == 'Product' or 'product' in str(ld.get('@type', '')).lower():
                 if not product_info.get('name'):
                     product_info['name'] = str(ld.get('name', ''))
-                if not product_info.get('price'):
+                if not product_info.get('_price_numeric'):
                     offers = ld.get('offers', {})
                     if isinstance(offers, dict):
-                        product_info['price'] = str(offers.get('price', ''))
+                        p = try_parse_price(offers.get('price'))
+                        if p:
+                            product_info['price'] = f"{p:.2f}"
+                            product_info['_price_numeric'] = p
     except:
         pass
+
+# --- Fallback: regex extraction for price from HTML ---
+if not product_info.get('_price_numeric'):
+    for pat in [r'"sale_price_format"\s*:\s*"([^"]+)"',
+                r'"sale_price"\s*:\s*"?(\$?[\d,.]+)',
+                r'"price"\s*:\s*"?(\$?[\d,.]+)',
+                r'"original_price"\s*:\s*"?(\$?[\d,.]+)']:
+        m = re.search(pat, html)
+        if m:
+            p = try_parse_price(m.group(1))
+            if p:
+                product_info['price'] = f"{p:.2f}"
+                product_info['_price_numeric'] = p
+                break
+    if not product_info.get('_price_numeric'):
+        m = re.search(r'\$(\d+\.\d{2})', html)
+        if m:
+            p = try_parse_price(m.group(1))
+            if p:
+                product_info['price'] = f"{p:.2f}"
+                product_info['_price_numeric'] = p
 
 # --- Fallback: regex extraction from raw HTML for product name ---
 if not product_info.get('name'):
@@ -219,14 +287,61 @@ with open(product_file, 'w') as f:
     for k, v in product_info.items():
         f.write(f'{k}={v}\n')
 
-# --- Write creator CSV ---
+# --- Write creator CSV with GMV estimation ---
 pname = product_info.get('name', '').replace('"', '""')
 pprice = product_info.get('price', '')
 psold = product_info.get('sold_count', '')
+price_numeric = product_info.get('_price_numeric')
+
+# Parse sold_count to numeric
+sold_numeric = None
+if psold:
+    raw = psold.strip().upper().replace(',', '')
+    try:
+        if raw.endswith('K'):
+            sold_numeric = int(float(raw[:-1]) * 1000)
+        elif raw.endswith('M'):
+            sold_numeric = int(float(raw[:-1]) * 1000000)
+        else:
+            sold_numeric = int(raw)
+    except ValueError:
+        pass
+
+# Calculate total_plays across all creators
+total_plays = 0
+for v in creator_videos:
+    try:
+        total_plays += int(v.get('play_count', '0') or '0')
+    except ValueError:
+        pass
 
 with open(csv_file, 'w', newline='') as f:
     w = csv.writer(f)
     for v in creator_videos:
+        play_count = 0
+        try:
+            play_count = int(v.get('play_count', '0') or '0')
+        except ValueError:
+            pass
+
+        # GMV share
+        if total_plays > 0:
+            gmv_share = play_count / total_plays
+        else:
+            gmv_share = 0.0
+
+        # Est GMV USD
+        if price_numeric and sold_numeric is not None and sold_numeric > 0:
+            est_gmv_usd = f"{gmv_share * sold_numeric * price_numeric:.2f}"
+        else:
+            est_gmv_usd = 'n/a'
+
+        # Est conversion rate
+        if total_plays > 0 and sold_numeric is not None:
+            est_conv = f"{sold_numeric / total_plays:.8f}"
+        else:
+            est_conv = 'n/a'
+
         w.writerow([
             v.get('author_name', ''),
             v.get('author_id', ''),
@@ -238,6 +353,9 @@ with open(csv_file, 'w', newline='') as f:
             psold,
             v.get('content_url', ''),
             v.get('title', ''),
+            f"{gmv_share:.8f}",
+            est_gmv_usd,
+            est_conv,
         ])
 
 print(f"CREATORS_FOUND={len(creator_videos)}")
@@ -278,7 +396,7 @@ fi
 csv_escape() { printf '"%s"' "$(echo "$1" | sed 's/"/""/g')"; }
 
 if [ ! -s "$OUTPUT" ]; then
-  echo "author_name,author_id,play_count,like_count,upload_time,product_name,product_price,product_sold_count,content_url,title" > "$OUTPUT"
+  echo "author_name,author_id,play_count,like_count,upload_time,product_name,product_price,product_sold_count,content_url,title,est_gmv_share,est_gmv_usd,est_conversion_rate" > "$OUTPUT"
 fi
 
 # Append extracted rows
