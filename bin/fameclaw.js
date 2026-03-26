@@ -45,10 +45,12 @@ program
 program
   .command('prospect')
   .description('Find creators matching queries (YouTube or TikTok)')
-  .option('-p, --platform <platform>', 'Platform: youtube (default), tiktok, x')
+  .option('-p, --platform <platform>', 'Platform: youtube (default), tiktok, tiktokshop, x')
   .option('--queries <queries...>', 'Search queries (YouTube)')
   .option('--hashtags <hashtags...>', 'Hashtags to scrape (TikTok)')
   .option('--handles <handles...>', 'X handles to extract')
+  .option('--product-urls <file>', 'File with product URLs (TikTok Shop)')
+  .option('--category <category>', 'Shop category to discover (TikTok Shop)')
   .option('--target <n>', 'Target number of creators', '100')
   .option('--output <file>', 'Output CSV file')
   .option('--max-subs <n>', 'Max subscriber count (YouTube)', '100000')
@@ -58,6 +60,20 @@ program
   .option('--config <file>', 'Config JSON file (YouTube)')
   .action((opts) => {
     const platform = opts.platform || 'youtube';
+
+    if (platform === 'tiktokshop') {
+      if (!opts.productUrls && !opts.category) {
+        console.error('Error: --product-urls or --category is required for TikTok Shop prospecting');
+        process.exit(1);
+      }
+      const output = opts.output || 'tiktokshop_creators.csv';
+      const args = ['--target', opts.target];
+      if (opts.productUrls) args.push('--product-urls', opts.productUrls);
+      if (opts.category) args.push('--category', opts.category);
+      args.push(output);
+      bash('prospect_tiktokshop.sh', args);
+      return;
+    }
 
     if (platform === 'x') {
       if (!opts.handles || opts.handles.length === 0) {
@@ -145,6 +161,7 @@ program
 
 // ── Platform detection helper ──
 function detectPlatform(url) {
+  if (/tiktok\.com\/shop/i.test(url) || /shop\.tiktok\.com/i.test(url)) return 'tiktokshop';
   if (/tiktok\.com/i.test(url)) return 'tiktok';
   if (/(?:^|\/\/)(x|twitter)\.com/i.test(url)) return 'x';
   if (/youtube\.com|youtu\.be/i.test(url)) return 'youtube';
@@ -166,9 +183,11 @@ program
   .option('--output <file>', 'Output CSV file')
   .action((url, opts) => {
     const platform = resolvePlatform(url, opts.platform);
-    const defaultOutput = platform === 'tiktok' ? 'tiktok_data.csv' : platform === 'x' ? 'x_data.csv' : 'output.csv';
+    const defaultOutput = platform === 'tiktokshop' ? 'tiktokshop_data.csv' : platform === 'tiktok' ? 'tiktok_data.csv' : platform === 'x' ? 'x_data.csv' : 'output.csv';
     const output = opts.output || defaultOutput;
-    if (platform === 'x') {
+    if (platform === 'tiktokshop') {
+      bash('extract_tiktokshop.sh', [url, output]);
+    } else if (platform === 'x') {
       bash('extract_x.sh', [url, output]);
     } else if (platform === 'tiktok') {
       bash('extract_tiktok.sh', [url, output]);
