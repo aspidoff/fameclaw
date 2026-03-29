@@ -35,7 +35,7 @@ Store at `~/.config/fameclaw/gmail.json` (mode 600):
   "email": "admin@company.com",
   "app_password": "xxxx xxxx xxxx xxxx",
   "from_email": "daniel@company.com",
-  "display_name": "Daniel from Fameswap"
+  "display_name": "Daniel from Brand"
 }
 ```
 
