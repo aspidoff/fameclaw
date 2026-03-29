@@ -213,11 +213,27 @@ The script auto-removes the cron job when the email target is reached.
 - `curl`
 - `python3` (3.9+)
 - No API keys needed
-- [OpenClaw](https://github.com/openclaw/openclaw) (optional, for cron automation)
+- [OpenClaw](https://github.com/openclaw/openclaw) or [NanoClaw](https://nanoclaw.dev) (optional, for AI agent integration)
 
-## OpenClaw Skill
+## AI Agent Integration
 
-FameClaw is also available as an [OpenClaw](https://github.com/openclaw/openclaw) skill. Drop the `.skill` file into your workspace and the agent handles the entire pipeline conversationally — onboarding, prospecting, scoring, delivery.
+FameClaw works as a skill for both major personal AI agent platforms:
+
+### OpenClaw
+
+Drop the skill into your OpenClaw workspace and the agent handles the entire pipeline conversationally — onboarding, prospecting, scoring, outreach. Uses OpenClaw's cron system for automated runs.
+
+### NanoClaw
+
+FameClaw ships with a NanoClaw-compatible skill in the `nanoclaw/` directory. Copy it to your NanoClaw's `.claude/skills/fameclaw/` directory:
+
+```bash
+cp -r nanoclaw/ /path/to/nanoclaw/.claude/skills/fameclaw/
+```
+
+The scripts run inside NanoClaw's container sandbox. Mount `~/.config/fameclaw/` for credentials and your working directory for CSV output. Uses NanoClaw's task scheduler for recurring runs.
+
+**Both integrations use the same core scripts — zero divergence, zero API keys, fully local.**
 
 ## License
 
